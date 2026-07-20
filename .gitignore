@@ -1,0 +1,33 @@
+# NeutroWaste GOP
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+**/application-local.yml
+**/application-local.properties
+
+# Java / Maven
+api/target/
+api/.mvn/wrapper/maven-wrapper.jar
+api/.mvn/truststore.jks
+api/.mvn/jvm.config
+
+# Node / Angular
+web/node_modules/
+web/dist/
+web/.angular/
+web/coverage/
+
+.cursorrules
+.cursor/

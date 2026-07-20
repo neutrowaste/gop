@@ -1,0 +1,4 @@
+# Copie para jvm.config após gerar o truststore (Norton/antivirus SSL inspection).
+# Ver README.md na raiz do repositório.
+-Djavax.net.ssl.trustStore=.mvn/truststore.jks
+-Djavax.net.ssl.trustStorePassword=changeit
