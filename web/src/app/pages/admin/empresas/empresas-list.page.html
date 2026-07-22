@@ -1,0 +1,131 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Clientes</p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Empresas</h2>
+      <p class="mt-1 text-sm text-slate-400">Tenants sob gestão da plataforma NeutroWaste</p>
+    </div>
+    <button
+      type="button"
+      class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+      (click)="abrirForm()"
+    >
+      Nova empresa
+    </button>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+      {{ mensagem }}
+    </div>
+  }
+
+  @if (mostrarForm()) {
+    <form
+      class="mb-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-5 sm:grid-cols-2"
+      [formGroup]="form"
+      (ngSubmit)="criar()"
+    >
+      <div class="space-y-2">
+        <label class="text-sm text-slate-300" for="codigo">Código</label>
+        <input
+          id="codigo"
+          formControlName="codigo"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          placeholder="CLIENTE-SP"
+        />
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm text-slate-300" for="nome">Nome</label>
+        <input
+          id="nome"
+          formControlName="nome"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          placeholder="Cliente São Paulo"
+        />
+      </div>
+      <div class="flex gap-2 sm:col-span-2">
+        <button
+          type="submit"
+          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+          [disabled]="salvando()"
+        >
+          {{ salvando() ? 'Salvando…' : 'Criar empresa' }}
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300"
+          (click)="fecharForm()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="mb-4 flex gap-2 text-sm">
+    @for (opcao of [
+      { id: 'todas', label: 'Todas' },
+      { id: 'ativas', label: 'Ativas' },
+      { id: 'inativas', label: 'Inativas' }
+    ]; track opcao.id) {
+      <button
+        type="button"
+        class="rounded-lg px-3 py-1.5 transition"
+        [class]="
+          filtroAtivo() === opcao.id
+            ? 'bg-emerald-500/15 text-emerald-300'
+            : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+        "
+        (click)="aplicarFiltro($any(opcao.id))"
+      >
+        {{ opcao.label }}
+      </button>
+    }
+  </div>
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando empresas…</p>
+  } @else if (empresas().length === 0) {
+    <p class="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-sm text-slate-500">
+      Nenhuma empresa encontrada.
+    </p>
+  } @else {
+    <div class="overflow-hidden rounded-xl border border-slate-800">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-900/80 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Empresa</th>
+            <th class="px-4 py-3 font-medium">Código</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+          @for (empresa of empresas(); track empresa.id) {
+            <tr class="hover:bg-slate-900/40">
+              <td class="px-4 py-3 font-medium text-slate-100">{{ empresa.nome }}</td>
+              <td class="px-4 py-3 text-slate-400">{{ empresa.codigo }}</td>
+              <td class="px-4 py-3">
+                <span
+                  class="rounded-full px-2.5 py-0.5 text-xs"
+                  [class]="empresa.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+                >
+                  {{ empresa.ativo ? 'Ativa' : 'Inativa' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/admin/empresas', empresa.id]"
+                  class="text-emerald-400 hover:text-emerald-300"
+                >
+                  Gerenciar
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -7,6 +7,13 @@ server:
   servlet:
     context-path: /api
 
+security:
+  jwt:
+    issuer: neutrowaste-gop
+    access-token-ttl: 15m
+    # Apenas para desenvolvimento local. Em produção, JWT_SECRET é obrigatório.
+    secret: ${JWT_SECRET:gop-local-dev-secret-change-me-2026}
+
 management:
   endpoints:
     web:
