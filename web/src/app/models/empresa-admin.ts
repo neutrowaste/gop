@@ -1,4 +1,10 @@
-export interface EmpresaAdmin {
+export interface EmpresaAdminRequest {
+  email: string;
+  senha: string;
+  nome: string;
+}
+
+export interface EmpresaAdminResponse {
   id: number;
   empresaId: number;
   email: string;
@@ -6,10 +12,4 @@ export interface EmpresaAdmin {
   ativo: boolean;
   criadoEm: string;
   atualizadoEm: string;
-}
-
-export interface EmpresaAdminRequest {
-  email: string;
-  senha: string;
-  nome: string;
 }

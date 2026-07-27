@@ -2,8 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { EmpresaAdmin, EmpresaAdminRequest } from '../models/empresa-admin';
-import { EmpresaModulo } from '../models/empresa-modulo';
+import { EmpresaAdminResponse, EmpresaAdminRequest } from '../models/empresa-admin';
+import { EmpresaModulo } from '../models/organizacao';
 import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -15,12 +15,12 @@ export class EmpresaClienteAdminApiService {
     return `${this.api.baseUrl}/v1/admin/empresas/${empresaId}`;
   }
 
-  listarAdmins(empresaId: number): Observable<EmpresaAdmin[]> {
-    return this.http.get<EmpresaAdmin[]>(`${this.base(empresaId)}/admins`);
+  listarAdmins(empresaId: number): Observable<EmpresaAdminResponse[]> {
+    return this.http.get<EmpresaAdminResponse[]>(`${this.base(empresaId)}/admins`);
   }
 
-  criarAdmin(empresaId: number, request: EmpresaAdminRequest): Observable<EmpresaAdmin> {
-    return this.http.post<EmpresaAdmin>(`${this.base(empresaId)}/admins`, request);
+  criarAdmin(empresaId: number, request: EmpresaAdminRequest): Observable<EmpresaAdminResponse> {
+    return this.http.post<EmpresaAdminResponse>(`${this.base(empresaId)}/admins`, request);
   }
 
   desativarAdmin(empresaId: number, usuarioId: number): Observable<void> {

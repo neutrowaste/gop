@@ -4,16 +4,16 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { EmpresaAdmin } from '../../../models/empresa-admin';
+import { EmpresaAdminResponse } from '../../../models/empresa-admin';
 import { Empresa } from '../../../models/empresa';
-import { EmpresaModulo } from '../../../models/empresa-modulo';
 import { Licenca, StatusLicenca, TetoAtivos } from '../../../models/licenca';
+import { EmpresaModulo } from '../../../models/organizacao';
 import { EmpresaAdminApiService } from '../../../services/empresa-admin-api.service';
 import { EmpresaClienteAdminApiService } from '../../../services/empresa-cliente-admin-api.service';
 import { mensagemHttp } from '../../../services/http-erro';
 import { LicencaAdminApiService } from '../../../services/licenca-admin-api.service';
 
-type Aba = 'dados' | 'licencas' | 'modulos' | 'admins';
+type Aba = 'dados' | 'licencas' | 'admins' | 'modulos';
 
 @Component({
   selector: 'app-empresa-detail-page',
@@ -25,7 +25,7 @@ export class EmpresaDetailPage implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly empresasApi = inject(EmpresaAdminApiService);
   private readonly licencasApi = inject(LicencaAdminApiService);
-  private readonly clienteApi = inject(EmpresaClienteAdminApiService);
+  private readonly clienteAdminApi = inject(EmpresaClienteAdminApiService);
 
   readonly aba = signal<Aba>('dados');
   readonly carregando = signal(true);
@@ -37,8 +37,8 @@ export class EmpresaDetailPage implements OnInit {
   readonly licencas = signal<Licenca[]>([]);
   readonly teto = signal<TetoAtivos | null>(null);
   readonly tetoErro = signal<string | null>(null);
+  readonly admins = signal<EmpresaAdminResponse[]>([]);
   readonly modulos = signal<EmpresaModulo[]>([]);
-  readonly admins = signal<EmpresaAdmin[]>([]);
 
   readonly statusOpcoes: StatusLicenca[] = ['ATIVA', 'SUSPENSA', 'ENCERRADA'];
 
@@ -50,18 +50,26 @@ export class EmpresaDetailPage implements OnInit {
 
   readonly formLicenca = this.fb.nonNullable.group({
     tetoAtivos: [10, [Validators.required, Validators.min(0)]],
-    vigenciaInicio: ['', Validators.required],
+    vigenciaInicio: [EmpresaDetailPage.dataIsoHoje(), Validators.required],
     vigenciaFim: [''],
     status: ['ATIVA' as StatusLicenca, Validators.required],
   });
 
   readonly formAdmin = this.fb.nonNullable.group({
-    nome: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    senha: ['', [Validators.required, Validators.minLength(8)]],
+    nome: ['', [Validators.required, Validators.maxLength(200)]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(200)]],
+    senha: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(100)]],
   });
 
   private empresaId = 0;
+
+  private static dataIsoHoje(): string {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
 
   ngOnInit(): void {
     this.empresaId = Number(this.route.snapshot.paramMap.get('id'));
@@ -86,16 +94,11 @@ export class EmpresaDetailPage implements OnInit {
     forkJoin({
       empresa: this.empresasApi.buscar(this.empresaId),
       licencas: this.licencasApi.listarPorEmpresa(this.empresaId),
-      teto: this.licencasApi.consultarTeto(this.empresaId).pipe(
-        catchError((erro: unknown) => {
-          this.tetoErro.set(mensagemHttp(erro, 'Sem licença vigente'));
-          return of(null);
-        }),
-      ),
-      modulos: this.clienteApi.listarModulos(this.empresaId),
-      admins: this.clienteApi.listarAdmins(this.empresaId),
+      teto: this.licencasApi.consultarTeto(this.empresaId).pipe(catchError(() => of(null))),
+      admins: this.clienteAdminApi.listarAdmins(this.empresaId).pipe(catchError(() => of([]))),
+      modulos: this.clienteAdminApi.listarModulos(this.empresaId).pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ empresa, licencas, teto, modulos, admins }) => {
+      next: ({ empresa, licencas, teto, admins, modulos }) => {
         this.empresa.set(empresa);
         this.formEmpresa.patchValue({
           codigo: empresa.codigo,
@@ -104,11 +107,9 @@ export class EmpresaDetailPage implements OnInit {
         });
         this.licencas.set(licencas);
         this.teto.set(teto);
-        if (teto) {
-          this.tetoErro.set(null);
-        }
-        this.modulos.set(modulos);
+        this.tetoErro.set(teto ? null : this.explicarTetoAusente(licencas));
         this.admins.set(admins);
+        this.modulos.set(modulos);
         this.carregando.set(false);
       },
       error: (erro: unknown) => {
@@ -161,6 +162,7 @@ export class EmpresaDetailPage implements OnInit {
       return;
     }
     this.salvando.set(true);
+    this.erro.set(null);
     const raw = this.formLicenca.getRawValue();
     this.licencasApi
       .criar(this.empresaId, {
@@ -174,7 +176,7 @@ export class EmpresaDetailPage implements OnInit {
         next: () => {
           this.formLicenca.reset({
             tetoAtivos: 10,
-            vigenciaInicio: '',
+            vigenciaInicio: EmpresaDetailPage.dataIsoHoje(),
             vigenciaFim: '',
             status: 'ATIVA',
           });
@@ -199,33 +201,15 @@ export class EmpresaDetailPage implements OnInit {
     });
   }
 
-  alternarModulo(modulo: EmpresaModulo): void {
-    this.clienteApi
-      .atualizarModulo(this.empresaId, modulo.moduloId, !modulo.habilitado)
-      .subscribe({
-        next: (atualizado) => {
-          this.modulos.update((lista) =>
-            lista.map((item) => (item.moduloId === atualizado.moduloId ? atualizado : item)),
-          );
-          this.ok.set(
-            atualizado.habilitado
-              ? `Módulo ${atualizado.nome} liberado.`
-              : `Módulo ${atualizado.nome} bloqueado.`,
-          );
-        },
-        error: (erro: unknown) =>
-          this.erro.set(mensagemHttp(erro, 'Falha ao atualizar módulo')),
-      });
-  }
-
   criarAdmin(): void {
     if (this.formAdmin.invalid) {
       this.formAdmin.markAllAsTouched();
       return;
     }
     this.salvando.set(true);
+    this.erro.set(null);
     const raw = this.formAdmin.getRawValue();
-    this.clienteApi
+    this.clienteAdminApi
       .criarAdmin(this.empresaId, {
         nome: raw.nome.trim(),
         email: raw.email.trim(),
@@ -239,19 +223,62 @@ export class EmpresaDetailPage implements OnInit {
           this.carregarTudo();
         },
         error: (erro: unknown) => {
-          this.erro.set(mensagemHttp(erro, 'Falha ao criar admin'));
+          this.erro.set(mensagemHttp(erro, 'Falha ao criar administrador'));
           this.salvando.set(false);
         },
       });
   }
 
-  desativarAdmin(admin: EmpresaAdmin): void {
-    if (!confirm(`Desativar ${admin.email}?`)) {
+  desativarAdmin(admin: EmpresaAdminResponse): void {
+    if (!confirm(`Desativar admin ${admin.email}?`)) {
       return;
     }
-    this.clienteApi.desativarAdmin(this.empresaId, admin.id).subscribe({
+    this.clienteAdminApi.desativarAdmin(this.empresaId, admin.id).subscribe({
       next: () => this.carregarTudo(),
       error: (erro: unknown) => this.erro.set(mensagemHttp(erro, 'Falha ao desativar admin')),
     });
+  }
+
+  alternarModulo(modulo: EmpresaModulo): void {
+    this.clienteAdminApi
+      .atualizarModulo(this.empresaId, modulo.moduloId, !modulo.habilitado)
+      .subscribe({
+        next: (atualizado) => {
+          this.modulos.update((lista) =>
+            lista.map((item) =>
+              item.moduloId === atualizado.moduloId ? atualizado : item,
+            ),
+          );
+          this.ok.set(
+            atualizado.habilitado
+              ? `Módulo ${atualizado.nome} habilitado para o tenant.`
+              : `Módulo ${atualizado.nome} desabilitado.`,
+          );
+        },
+        error: (erro: unknown) =>
+          this.erro.set(mensagemHttp(erro, 'Falha ao atualizar módulo')),
+      });
+  }
+
+  private explicarTetoAusente(licencas: Licenca[]): string {
+    const hoje = EmpresaDetailPage.dataIsoHoje();
+    const candidatas = licencas.filter((l) => l.ativo && l.status === 'ATIVA');
+
+    const futuras = candidatas
+      .filter((l) => l.vigenciaInicio > hoje)
+      .sort((a, b) => a.vigenciaInicio.localeCompare(b.vigenciaInicio));
+    if (futuras.length > 0) {
+      const proxima = futuras[0];
+      return `Há licença #${proxima.id} ativa, mas ainda não vigente (início em ${proxima.vigenciaInicio}).`;
+    }
+
+    const expiradas = candidatas.filter(
+      (l) => l.vigenciaFim != null && l.vigenciaFim < hoje,
+    );
+    if (expiradas.length > 0 && candidatas.every((l) => l.vigenciaFim != null && l.vigenciaFim < hoje)) {
+      return 'As licenças ativas cadastradas já expiraram.';
+    }
+
+    return 'A empresa não possui licença vigente para a data de hoje.';
   }
 }

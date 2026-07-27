@@ -1,0 +1,125 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      @if (usuario()?.empresaCodigo; as codigo) {
+        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ codigo }}</p>
+      } @else {
+        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Organização</p>
+      }
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Usuários</h2>
+      <p class="mt-1 text-sm text-slate-400">
+        @if (usuario()?.empresaNome; as empresaNome) {
+          Gerencie usuários apenas de <span class="text-slate-200">{{ empresaNome }}</span>
+        } @else {
+          Crie e gerencie usuários apenas da sua empresa
+        }
+      </p>
+    </div>
+    <button
+      type="button"
+      class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+      (click)="abrirForm()"
+    >
+      Novo usuário
+    </button>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+      {{ mensagem }}
+    </div>
+  }
+
+  @if (mostrarForm()) {
+    <form
+      class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      [formGroup]="form"
+      (ngSubmit)="criar()"
+    >
+      <h3 class="text-sm font-medium text-slate-300">Novo usuário</h3>
+      <div class="space-y-1">
+        <label class="text-xs text-slate-500" for="nome">Nome</label>
+        <input
+          id="nome"
+          formControlName="nome"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+        />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs text-slate-500" for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+        />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs text-slate-500" for="senha">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          formControlName="senha"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+        />
+      </div>
+      <label class="flex items-center gap-2 text-sm text-slate-300">
+        <input type="checkbox" formControlName="administradorEmpresa" class="rounded border-slate-600" />
+        Administrador da empresa
+      </label>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button
+          type="submit"
+          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+          [disabled]="salvando()"
+        >
+          Criar
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300"
+          (click)="fecharForm()"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando usuários…</p>
+  } @else if (usuarios().length === 0) {
+    <p class="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-sm text-slate-500">
+      Nenhum usuário cadastrado na organização.
+    </p>
+  } @else {
+    <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+      @for (user of usuarios(); track user.id) {
+        <li>
+          <a
+            [routerLink]="['/org/usuarios', user.id]"
+            class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-900/70"
+          >
+            <div>
+              <p class="font-medium text-slate-100">{{ user.nome }}</p>
+              <p class="text-xs text-slate-500">{{ user.email }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              @if (user.administradorEmpresa) {
+                <span class="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-xs text-sky-300">
+                  Admin
+                </span>
+              }
+              <span
+                class="rounded-full px-2.5 py-0.5 text-xs"
+                [class]="user.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+              >
+                {{ user.ativo ? 'Ativo' : 'Inativo' }}
+              </span>
+            </div>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</div>

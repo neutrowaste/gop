@@ -1,0 +1,137 @@
+<div class="px-6 py-8 lg:px-10">
+  <a routerLink="/org/usuarios" class="text-sm text-slate-400 hover:text-slate-200">← Usuários</a>
+
+  @if (carregando()) {
+    <p class="mt-6 text-sm text-slate-500">Carregando usuário…</p>
+  } @else if (usuario(); as user) {
+    <header class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Usuário</p>
+        <h2 class="mt-2 text-2xl font-semibold tracking-tight">{{ user.nome }}</h2>
+        <p class="mt-1 text-sm text-slate-400">{{ user.email }}</p>
+      </div>
+      <span
+        class="rounded-full px-3 py-1 text-xs"
+        [class]="user.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+      >
+        {{ user.ativo ? 'Ativo' : 'Inativo' }}
+      </span>
+    </header>
+
+    @if (erro(); as mensagem) {
+      <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+        {{ mensagem }}
+      </div>
+    }
+    @if (ok(); as mensagem) {
+      <div class="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">
+        {{ mensagem }}
+      </div>
+    }
+
+    <div class="grid gap-8 lg:grid-cols-[1fr_1fr]">
+      <form class="space-y-4" [formGroup]="form" (ngSubmit)="salvar()">
+        <h3 class="text-sm font-medium text-slate-300">Dados</h3>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300" for="nome">Nome</label>
+          <input
+            id="nome"
+            formControlName="nome"
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300" for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300" for="senha">Nova senha (opcional)</label>
+          <input
+            id="senha"
+            type="password"
+            formControlName="senha"
+            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          />
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" formControlName="ativo" class="rounded border-slate-600" />
+          Usuário ativo
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            formControlName="administradorEmpresa"
+            class="rounded border-slate-600"
+          />
+          Administrador da empresa
+        </label>
+        <div class="flex flex-wrap gap-2 pt-2">
+          <button
+            type="submit"
+            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+            [disabled]="salvando()"
+          >
+            Salvar
+          </button>
+          @if (user.ativo) {
+            <button
+              type="button"
+              class="rounded-lg border border-rose-500/40 px-4 py-2 text-sm text-rose-300"
+              (click)="desativar()"
+            >
+              Desativar
+            </button>
+          }
+        </div>
+      </form>
+
+      <section>
+        <h3 class="text-sm font-medium text-slate-300">Módulos liberados</h3>
+        <p class="mt-1 text-xs text-slate-500">
+          Somente módulos já contratados pela organização podem ser liberados a este usuário.
+        </p>
+
+        @if (modulos().length === 0) {
+          <p class="mt-4 text-sm text-slate-500">Catálogo de módulos indisponível.</p>
+        } @else {
+          <ul class="mt-4 divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+            @for (modulo of modulos(); track modulo.moduloId) {
+              <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <p class="text-sm font-medium text-slate-100">{{ modulo.nome }}</p>
+                  <p class="text-xs text-slate-500">
+                    {{ modulo.codigo }}
+                    @if (!modulo.contratado) {
+                      <span>· não contratado</span>
+                    }
+                  </p>
+                </div>
+                @if (modulo.contratado) {
+                  <button
+                    type="button"
+                    class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                    [class]="
+                      modulo.liberado
+                        ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                        : 'border border-slate-700 text-slate-300 hover:border-slate-500'
+                    "
+                    (click)="alternarModulo(modulo)"
+                  >
+                    {{ modulo.liberado ? 'Liberado' : 'Liberar' }}
+                  </button>
+                } @else {
+                  <span class="text-xs text-slate-600">Indisponível</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</div>

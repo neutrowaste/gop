@@ -9,7 +9,7 @@
         <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ emp.codigo }}</p>
         <h2 class="mt-2 text-2xl font-semibold tracking-tight">{{ emp.nome }}</h2>
         <p class="mt-1 text-sm text-slate-400">
-          Controle comercial e operacional do tenant
+          Cadastro do cliente, licenças e teto de ativos
         </p>
       </div>
       <span
@@ -35,8 +35,8 @@
       @for (item of [
         { id: 'dados', label: 'Dados' },
         { id: 'licencas', label: 'Licenças e teto' },
-        { id: 'modulos', label: 'Módulos' },
-        { id: 'admins', label: 'Admins da empresa' }
+        { id: 'admins', label: 'Admins da empresa' },
+        { id: 'modulos', label: 'Módulos' }
       ]; track item.id) {
         <button
           type="button"
@@ -186,6 +186,9 @@
 
         <aside class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 h-fit">
           <h3 class="text-sm font-medium text-slate-300">Teto vigente</h3>
+          <p class="mt-1 text-xs text-slate-500">
+            Considera apenas licença ATIVA cuja vigência inclui a data de hoje.
+          </p>
           @if (teto(); as t) {
             <dl class="mt-4 space-y-3 text-sm">
               <div class="flex justify-between gap-2">
@@ -206,120 +209,130 @@
               </div>
             </dl>
           } @else {
-            <p class="mt-3 text-sm text-slate-500">
-              {{ tetoErro() || 'Sem licença vigente para esta empresa.' }}
+            <p class="mt-3 text-sm text-amber-200/90">
+              {{ tetoErro() || 'A empresa não possui licença vigente para a data de hoje.' }}
             </p>
           }
         </aside>
       </div>
     }
 
-    @if (aba() === 'modulos') {
-      <p class="mb-4 text-sm text-slate-400">
-        Libere os módulos contratados. O acesso do tenant segue as feature flags da licença comercial.
-      </p>
-      <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-        @for (modulo of modulos(); track modulo.moduloId) {
-          <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <div>
-              <p class="font-medium text-slate-100">{{ modulo.nome }}</p>
-              <p class="text-xs text-slate-500">
-                {{ modulo.codigo }} · {{ modulo.categoria }}
-                @if (modulo.desde) {
-                  · desde {{ modulo.desde }}
-                }
-              </p>
-            </div>
-            <button
-              type="button"
-              class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
-              [class]="
-                modulo.habilitado
-                  ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
-                  : 'border border-slate-700 text-slate-300 hover:border-slate-500'
-              "
-              (click)="alternarModulo(modulo)"
-            >
-              {{ modulo.habilitado ? 'Liberado' : 'Bloqueado' }}
-            </button>
-          </li>
-        }
-      </ul>
+    @if (aba() === 'admins') {
+      <div class="grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <form
+          class="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+          [formGroup]="formAdmin"
+          (ngSubmit)="criarAdmin()"
+        >
+          <h3 class="text-sm font-medium text-slate-300">Novo administrador da empresa</h3>
+          <p class="text-xs text-slate-500">
+            Esse usuário acessa a área Admin Empresa e gerencia apenas a própria organização.
+          </p>
+          <div class="space-y-1">
+            <label class="text-xs text-slate-500" for="adminNome">Nome</label>
+            <input
+              id="adminNome"
+              formControlName="nome"
+              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-slate-500" for="adminEmail">Email</label>
+            <input
+              id="adminEmail"
+              type="email"
+              formControlName="email"
+              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-slate-500" for="adminSenha">Senha</label>
+            <input
+              id="adminSenha"
+              type="password"
+              formControlName="senha"
+              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+            />
+          </div>
+          <button
+            type="submit"
+            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+            [disabled]="salvando()"
+          >
+            Criar admin
+          </button>
+        </form>
+
+        <div>
+          <h3 class="mb-3 text-sm font-medium text-slate-300">Administradores</h3>
+          @if (admins().length === 0) {
+            <p class="text-sm text-slate-500">Nenhum administrador cadastrado.</p>
+          } @else {
+            <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+              @for (admin of admins(); track admin.id) {
+                <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <p class="text-sm font-medium text-slate-100">{{ admin.nome }}</p>
+                    <p class="text-xs text-slate-500">{{ admin.email }}</p>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="rounded-full px-2.5 py-0.5 text-xs"
+                      [class]="admin.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+                    >
+                      {{ admin.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                    @if (admin.ativo) {
+                      <button
+                        type="button"
+                        class="text-sm text-rose-300 hover:text-rose-200"
+                        (click)="desativarAdmin(admin)"
+                      >
+                        Desativar
+                      </button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
     }
 
-    @if (aba() === 'admins') {
-      <form
-        class="mb-6 grid max-w-2xl gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4 sm:grid-cols-2"
-        [formGroup]="formAdmin"
-        (ngSubmit)="criarAdmin()"
-      >
-        <h3 class="sm:col-span-2 text-sm font-medium text-slate-300">Novo admin da empresa</h3>
-        <div class="space-y-1 sm:col-span-2">
-          <label class="text-xs text-slate-500" for="adminNome">Nome</label>
-          <input
-            id="adminNome"
-            formControlName="nome"
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="adminEmail">Email</label>
-          <input
-            id="adminEmail"
-            type="email"
-            formControlName="email"
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-          />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="adminSenha">Senha inicial</label>
-          <input
-            id="adminSenha"
-            type="password"
-            formControlName="senha"
-            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-          />
-        </div>
-        <button
-          type="submit"
-          class="sm:col-span-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-          [disabled]="salvando()"
-        >
-          Criar administrador
-        </button>
-      </form>
-
-      @if (admins().length === 0) {
-        <p class="text-sm text-slate-500">Nenhum administrador cadastrado para este cliente.</p>
-      } @else {
-        <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-          @for (admin of admins(); track admin.id) {
-            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div>
-                <p class="font-medium text-slate-100">{{ admin.nome }}</p>
-                <p class="text-xs text-slate-500">{{ admin.email }}</p>
-              </div>
-              <div class="flex items-center gap-3">
-                <span
-                  class="rounded-full px-2.5 py-0.5 text-xs"
-                  [class]="admin.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+    @if (aba() === 'modulos') {
+      <div>
+        <h3 class="text-sm font-medium text-slate-300">Módulos do tenant</h3>
+        <p class="mt-1 mb-4 text-xs text-slate-500">
+          Habilite os módulos contratados. O admin da empresa só poderá liberá-los aos usuários da organização.
+        </p>
+        @if (modulos().length === 0) {
+          <p class="text-sm text-slate-500">Catálogo de módulos indisponível.</p>
+        } @else {
+          <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+            @for (modulo of modulos(); track modulo.moduloId) {
+              <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <p class="text-sm font-medium text-slate-100">{{ modulo.nome }}</p>
+                  <p class="text-xs text-slate-500">{{ modulo.codigo }} · {{ modulo.categoria }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                  [class]="
+                    modulo.habilitado
+                      ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                      : 'border border-slate-700 text-slate-300 hover:border-slate-500'
+                  "
+                  (click)="alternarModulo(modulo)"
                 >
-                  {{ admin.ativo ? 'Ativo' : 'Inativo' }}
-                </span>
-                @if (admin.ativo) {
-                  <button
-                    type="button"
-                    class="text-sm text-rose-300 hover:text-rose-200"
-                    (click)="desativarAdmin(admin)"
-                  >
-                    Desativar
-                  </button>
-                }
-              </div>
-            </li>
-          }
-        </ul>
-      }
+                  {{ modulo.habilitado ? 'Habilitado' : 'Habilitar' }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
     }
   }
 </div>

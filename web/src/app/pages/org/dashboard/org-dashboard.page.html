@@ -1,0 +1,111 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-8">
+    @if (usuario()?.empresaCodigo; as codigo) {
+      <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ codigo }}</p>
+    } @else {
+      <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Admin Empresa</p>
+    }
+    <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+      {{ usuario()?.empresaNome || 'Sua organização' }}
+    </h2>
+    <p class="mt-2 max-w-2xl text-sm text-slate-400">
+      Olá{{ usuario()?.nome ? ', ' + usuario()!.nome.split(' ')[0] : '' }}.
+      Gerencie os usuários desta empresa e liberação dos módulos contratados.
+    </p>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="mb-6 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+      {{ mensagem }}
+    </div>
+  }
+
+  <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Usuários</p>
+      <p class="mt-3 text-3xl font-semibold tabular-nums">
+        {{ carregando() ? '—' : totalUsuarios() }}
+      </p>
+      <p class="mt-1 text-sm text-slate-400">na {{ usuario()?.empresaNome || 'sua empresa' }}</p>
+    </article>
+    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Ativos</p>
+      <p class="mt-3 text-3xl font-semibold tabular-nums text-emerald-300">
+        {{ carregando() ? '—' : usuariosAtivos() }}
+      </p>
+      <p class="mt-1 text-sm text-slate-400">com acesso liberado</p>
+    </article>
+    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
+      <p class="text-xs uppercase tracking-wide text-slate-500">Módulos contratados</p>
+      <p class="mt-3 text-3xl font-semibold tabular-nums">
+        {{ carregando() ? '—' : modulosContratados() }}
+      </p>
+      <p class="mt-1 text-sm text-slate-400">disponíveis para liberar</p>
+    </article>
+  </section>
+
+  <section class="mt-8 grid gap-6 lg:grid-cols-2">
+    <div>
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-sm font-medium text-slate-300">Usuários recentes</h3>
+        <a routerLink="/org/usuarios" class="text-sm text-emerald-400 hover:text-emerald-300">
+          Gerenciar
+        </a>
+      </div>
+      @if (carregando()) {
+        <p class="text-sm text-slate-500">Carregando…</p>
+      } @else if (recentes().length === 0) {
+        <p class="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
+          Nenhum usuário cadastrado. Crie o primeiro usuário da organização.
+        </p>
+      } @else {
+        <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+          @for (user of recentes(); track user.id) {
+            <li>
+              <a
+                [routerLink]="['/org/usuarios', user.id]"
+                class="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-900/70"
+              >
+                <div>
+                  <p class="font-medium text-slate-100">{{ user.nome }}</p>
+                  <p class="text-xs text-slate-500">{{ user.email }}</p>
+                </div>
+                <span
+                  class="rounded-full px-2.5 py-0.5 text-xs"
+                  [class]="user.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+                >
+                  {{ user.ativo ? 'Ativo' : 'Inativo' }}
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div>
+      <h3 class="mb-4 text-sm font-medium text-slate-300">Módulos da organização</h3>
+      @if (carregando()) {
+        <p class="text-sm text-slate-500">Carregando…</p>
+      } @else if (modulos().length === 0) {
+        <p class="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
+          Nenhum módulo contratado ainda. A plataforma Neutrowaste precisa habilitar os módulos do tenant.
+        </p>
+      } @else {
+        <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
+          @for (modulo of modulos(); track modulo.moduloId) {
+            <li class="flex items-center justify-between gap-3 px-4 py-3">
+              <div>
+                <p class="text-sm font-medium text-slate-100">{{ modulo.nome }}</p>
+                <p class="text-xs text-slate-500">{{ modulo.codigo }} · {{ modulo.categoria }}</p>
+              </div>
+              <span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs text-emerald-300">
+                Contratado
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+</div>

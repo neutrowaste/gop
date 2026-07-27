@@ -24,7 +24,7 @@ gop:
   seed:
     admin-plataforma:
       enabled: ${GOP_SEED_ADMIN_ENABLED:true}
-      email: ${GOP_SEED_ADMIN_EMAIL:admin@neutrowaste.com}
+      email: ${GOP_SEED_ADMIN_EMAIL:admin@gop.com}
       # Apenas para desenvolvimento local. 
       senha: ${GOP_SEED_ADMIN_SENHA:Admin@Gop2026}
-      nome: ${GOP_SEED_ADMIN_NOME:Admin Plataforma NeutroWaste}
+      nome: ${GOP_SEED_ADMIN_NOME:Admin Plataforma GOP}
