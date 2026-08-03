@@ -45,7 +45,7 @@ export class AutenticacaoService {
   }
 
   logout(): void {
-    sessionStorage.removeItem(STORAGE_KEY);
+    this.limparStorage();
     this.sessao.set(null);
   }
 
@@ -63,25 +63,65 @@ export class AutenticacaoService {
   }
 
   temPapel(papel: string): boolean {
-    const papeis = this.sessao()?.papeis ?? [];
-    return papeis.some((item) => item.toUpperCase() === papel.toUpperCase());
+    return this.papeisAtual().some((item) => item.toUpperCase() === papel.toUpperCase());
+  }
+
+  private papeisAtual(): string[] {
+    return this.asLista(this.sessao()?.papeis);
   }
 
   private persistir(resposta: TokenResponse): void {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(resposta));
-    this.sessao.set(resposta);
+    const normalizada: TokenResponse = {
+      ...resposta,
+      papeis: this.asLista(resposta.papeis),
+      permissoes: this.asLista(resposta.permissoes),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizada));
+    sessionStorage.removeItem(STORAGE_KEY);
+    this.sessao.set(normalizada);
   }
 
   private carregarSessao(): TokenResponse | null {
-    const bruto = sessionStorage.getItem(STORAGE_KEY);
+    const bruto = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(STORAGE_KEY);
     if (!bruto) {
       return null;
     }
     try {
-      return JSON.parse(bruto) as TokenResponse;
+      const parsed = JSON.parse(bruto) as TokenResponse;
+      if (!parsed.accessToken) {
+        this.limparStorage();
+        return null;
+      }
+      if (parsed.expiraEm) {
+        const expira = Date.parse(parsed.expiraEm);
+        if (!Number.isNaN(expira) && expira <= Date.now()) {
+          this.limparStorage();
+          return null;
+        }
+      }
+      return {
+        ...parsed,
+        papeis: this.asLista(parsed.papeis),
+        permissoes: this.asLista(parsed.permissoes),
+      };
     } catch {
-      sessionStorage.removeItem(STORAGE_KEY);
+      this.limparStorage();
       return null;
     }
+  }
+
+  private limparStorage(): void {
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  private asLista(valor: unknown): string[] {
+    if (Array.isArray(valor)) {
+      return valor.filter((item): item is string => typeof item === 'string');
+    }
+    if (typeof valor === 'string' && valor.trim()) {
+      return [valor];
+    }
+    return [];
   }
 }

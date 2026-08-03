@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -22,6 +22,7 @@ type Aba = 'dados' | 'licencas' | 'admins' | 'modulos';
 })
 export class EmpresaDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly empresasApi = inject(EmpresaAdminApiService);
   private readonly licencasApi = inject(LicencaAdminApiService);
@@ -78,6 +79,9 @@ export class EmpresaDetailPage implements OnInit {
       this.carregando.set(false);
       return;
     }
+    this.route.queryParamMap.subscribe((params) => {
+      this.aplicarAbaDaRota(params.get('aba'));
+    });
     this.carregarTudo();
   }
 
@@ -85,6 +89,17 @@ export class EmpresaDetailPage implements OnInit {
     this.aba.set(aba);
     this.erro.set(null);
     this.ok.set(null);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { aba },
+      replaceUrl: true,
+    });
+  }
+
+  private aplicarAbaDaRota(valor: string | null): void {
+    if (valor === 'dados' || valor === 'licencas' || valor === 'admins' || valor === 'modulos') {
+      this.aba.set(valor);
+    }
   }
 
   carregarTudo(): void {

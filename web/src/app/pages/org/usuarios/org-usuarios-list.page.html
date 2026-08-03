@@ -2,86 +2,74 @@
   <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div>
       @if (usuario()?.empresaCodigo; as codigo) {
-        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ codigo }}</p>
+        <p class="flex items-center gap-2 font-mono text-xs font-medium uppercase tracking-[0.16em] text-navy-600">
+          <i class="ph ph-hash" aria-hidden="true"></i>
+          {{ codigo }}
+        </p>
       } @else {
-        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Organização</p>
+        <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+          <i class="ph ph-users" aria-hidden="true"></i>
+          Organização
+        </p>
       }
-      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Usuários</h2>
-      <p class="mt-1 text-sm text-slate-400">
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Usuários</h2>
+      <p class="mt-1 text-sm text-slate-500">
         @if (usuario()?.empresaNome; as empresaNome) {
-          Gerencie usuários apenas de <span class="text-slate-200">{{ empresaNome }}</span>
+          Gerencie usuários de <span class="font-medium text-slate-700">{{ empresaNome }}</span>
         } @else {
-          Crie e gerencie usuários apenas da sua empresa
+          Crie e gerencie usuários da sua empresa
         }
       </p>
     </div>
-    <button
-      type="button"
-      class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-      (click)="abrirForm()"
-    >
+    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+      <i class="ph ph-user-plus" aria-hidden="true"></i>
       Novo usuário
     </button>
   </header>
 
   @if (erro(); as mensagem) {
-    <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-      {{ mensagem }}
+    <div class="admin-alert-error mb-4 flex items-start gap-2">
+      <i class="ph ph-warning-circle mt-0.5 text-base" aria-hidden="true"></i>
+      <span>{{ mensagem }}</span>
     </div>
   }
 
   @if (mostrarForm()) {
     <form
-      class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4"
+      class="admin-card mb-6 grid max-w-xl gap-3 p-5"
       [formGroup]="form"
       (ngSubmit)="criar()"
     >
-      <h3 class="text-sm font-medium text-slate-300">Novo usuário</h3>
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <i class="ph ph-user-plus text-navy-700" aria-hidden="true"></i>
+        Novo usuário
+      </h3>
       <div class="space-y-1">
-        <label class="text-xs text-slate-500" for="nome">Nome</label>
-        <input
-          id="nome"
-          formControlName="nome"
-          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-        />
+        <label class="text-xs font-medium text-slate-500" for="nome">Nome</label>
+        <input id="nome" formControlName="nome" class="admin-input" />
       </div>
       <div class="space-y-1">
-        <label class="text-xs text-slate-500" for="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-        />
+        <label class="text-xs font-medium text-slate-500" for="email">Email</label>
+        <input id="email" type="email" formControlName="email" class="admin-input" />
       </div>
       <div class="space-y-1">
-        <label class="text-xs text-slate-500" for="senha">Senha</label>
-        <input
-          id="senha"
-          type="password"
-          formControlName="senha"
-          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-        />
+        <label class="text-xs font-medium text-slate-500" for="senha">Senha</label>
+        <input id="senha" type="password" formControlName="senha" class="admin-input" />
       </div>
-      <label class="flex items-center gap-2 text-sm text-slate-300">
-        <input type="checkbox" formControlName="administradorEmpresa" class="rounded border-slate-600" />
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          formControlName="administradorEmpresa"
+          class="rounded border-slate-300 text-navy-800"
+        />
         Administrador da empresa
       </label>
       <div class="flex flex-wrap gap-2 pt-1">
-        <button
-          type="submit"
-          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-          [disabled]="salvando()"
-        >
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-check" aria-hidden="true"></i>
           Criar
         </button>
-        <button
-          type="button"
-          class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300"
-          (click)="fecharForm()"
-        >
-          Cancelar
-        </button>
+        <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
       </div>
     </form>
   }
@@ -89,37 +77,66 @@
   @if (carregando()) {
     <p class="text-sm text-slate-500">Carregando usuários…</p>
   } @else if (usuarios().length === 0) {
-    <p class="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-sm text-slate-500">
-      Nenhum usuário cadastrado na organização.
-    </p>
+    <div class="admin-card border-dashed px-4 py-12 text-center">
+      <i class="ph ph-users text-3xl text-slate-300" aria-hidden="true"></i>
+      <p class="mt-3 text-sm text-slate-500">Nenhum usuário cadastrado na organização.</p>
+    </div>
   } @else {
-    <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-      @for (user of usuarios(); track user.id) {
-        <li>
-          <a
-            [routerLink]="['/org/usuarios', user.id]"
-            class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition hover:bg-slate-900/70"
-          >
-            <div>
-              <p class="font-medium text-slate-100">{{ user.nome }}</p>
-              <p class="text-xs text-slate-500">{{ user.email }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              @if (user.administradorEmpresa) {
-                <span class="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-xs text-sky-300">
-                  Admin
-                </span>
-              }
-              <span
-                class="rounded-full px-2.5 py-0.5 text-xs"
-                [class]="user.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
-              >
-                {{ user.ativo ? 'Ativo' : 'Inativo' }}
-              </span>
-            </div>
-          </a>
-        </li>
-      }
-    </ul>
+    <div class="admin-table-wrap">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Usuário</th>
+            <th class="px-4 py-3 font-medium">Email</th>
+            <th class="px-4 py-3 font-medium">Papel</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (user of usuarios(); track user.id) {
+            <tr class="transition hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700"
+                  >
+                    <i class="ph ph-user" aria-hidden="true"></i>
+                  </span>
+                  <span class="font-medium text-slate-900">{{ user.nome }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-slate-500">{{ user.email }}</td>
+              <td class="px-4 py-3">
+                @if (user.administradorEmpresa) {
+                  <span class="admin-badge-info">
+                    <i class="ph ph-shield-check" aria-hidden="true"></i>
+                    Admin
+                  </span>
+                } @else {
+                  <span class="text-xs text-slate-500">Usuário</span>
+                }
+              </td>
+              <td class="px-4 py-3">
+                @if (user.ativo) {
+                  <span class="admin-badge-ok">Ativo</span>
+                } @else {
+                  <span class="admin-badge-off">Inativo</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/org/usuarios', user.id]"
+                  class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-navy-800 transition hover:bg-navy-50"
+                >
+                  <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                  Editar
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </div>

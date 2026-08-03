@@ -3,9 +3,11 @@ package br.com.gop.controllers;
 import br.com.gop.models.EmpresaModuloResponse;
 import br.com.gop.models.OrganizacaoUsuarioRequest;
 import br.com.gop.models.OrganizacaoUsuarioResponse;
+import br.com.gop.models.TetoAtivosResponse;
 import br.com.gop.models.UsuarioModuloRequest;
 import br.com.gop.models.UsuarioModuloResponse;
 import br.com.gop.security.SegurancaContexto;
+import br.com.gop.services.ControleTetoAtivosService;
 import br.com.gop.services.EmpresaModuloService;
 import br.com.gop.services.OrganizacaoUsuarioService;
 import br.com.gop.services.UsuarioModuloService;
@@ -34,20 +36,28 @@ public class OrganizacaoAdminController {
 	private final OrganizacaoUsuarioService organizacaoUsuarioService;
 	private final UsuarioModuloService usuarioModuloService;
 	private final EmpresaModuloService empresaModuloService;
+	private final ControleTetoAtivosService controleTetoAtivosService;
 
 	public OrganizacaoAdminController(
 		OrganizacaoUsuarioService organizacaoUsuarioService,
 		UsuarioModuloService usuarioModuloService,
-		EmpresaModuloService empresaModuloService
+		EmpresaModuloService empresaModuloService,
+		ControleTetoAtivosService controleTetoAtivosService
 	) {
 		this.organizacaoUsuarioService = organizacaoUsuarioService;
 		this.usuarioModuloService = usuarioModuloService;
 		this.empresaModuloService = empresaModuloService;
+		this.controleTetoAtivosService = controleTetoAtivosService;
 	}
 
 	@GetMapping("/usuarios")
 	public List<OrganizacaoUsuarioResponse> listarUsuarios() {
 		return organizacaoUsuarioService.listar(SegurancaContexto.empresaIdObrigatoria());
+	}
+
+	@GetMapping("/teto-ativos")
+	public TetoAtivosResponse consultarTeto() {
+		return controleTetoAtivosService.consultar(SegurancaContexto.empresaIdObrigatoria());
 	}
 
 	@GetMapping("/usuarios/{usuarioId}")

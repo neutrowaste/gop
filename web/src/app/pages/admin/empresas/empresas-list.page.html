@@ -1,84 +1,77 @@
 <div class="px-6 py-8 lg:px-10">
   <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Clientes</p>
-      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Empresas</h2>
-      <p class="mt-1 text-sm text-slate-400">Tenants sob gestão da plataforma GOP</p>
+      <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+        <i class="ph ph-buildings" aria-hidden="true"></i>
+        Clientes
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Empresas</h2>
+      <p class="mt-1 text-sm text-slate-500">Tenants sob gestão da plataforma GOP</p>
     </div>
-    <button
-      type="button"
-      class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-      (click)="abrirForm()"
-    >
+    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+      <i class="ph ph-plus" aria-hidden="true"></i>
       Nova empresa
     </button>
   </header>
 
   @if (erro(); as mensagem) {
-    <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-      {{ mensagem }}
+    <div class="admin-alert-error mb-4 flex items-start gap-2">
+      <i class="ph ph-warning-circle mt-0.5 text-base" aria-hidden="true"></i>
+      <span>{{ mensagem }}</span>
     </div>
   }
 
   @if (mostrarForm()) {
-    <form
-      class="mb-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-5 sm:grid-cols-2"
-      [formGroup]="form"
-      (ngSubmit)="criar()"
-    >
+    <form class="admin-card mb-6 grid gap-4 p-5 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="criar()">
+      <div class="sm:col-span-2 flex items-center gap-2">
+        <i class="ph ph-building text-lg text-navy-700" aria-hidden="true"></i>
+        <h3 class="text-sm font-semibold text-slate-800">Nova empresa cliente</h3>
+      </div>
       <div class="space-y-2">
-        <label class="text-sm text-slate-300" for="codigo">Código</label>
+        <label class="text-sm font-medium text-slate-700" for="codigo">Código</label>
         <input
           id="codigo"
           formControlName="codigo"
-          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          class="admin-input"
           placeholder="CLIENTE-SP"
         />
       </div>
       <div class="space-y-2">
-        <label class="text-sm text-slate-300" for="nome">Nome</label>
+        <label class="text-sm font-medium text-slate-700" for="nome">Nome</label>
         <input
           id="nome"
           formControlName="nome"
-          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+          class="admin-input"
           placeholder="Cliente São Paulo"
         />
       </div>
       <div class="flex gap-2 sm:col-span-2">
-        <button
-          type="submit"
-          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-          [disabled]="salvando()"
-        >
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-check" aria-hidden="true"></i>
           {{ salvando() ? 'Salvando…' : 'Criar empresa' }}
         </button>
-        <button
-          type="button"
-          class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300"
-          (click)="fecharForm()"
-        >
-          Cancelar
-        </button>
+        <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
       </div>
     </form>
   }
 
-  <div class="mb-4 flex gap-2 text-sm">
+  <div class="mb-4 flex flex-wrap gap-2">
     @for (opcao of [
-      { id: 'todas', label: 'Todas' },
-      { id: 'ativas', label: 'Ativas' },
-      { id: 'inativas', label: 'Inativas' }
+      { id: 'todas', label: 'Todas', icon: 'ph-list' },
+      { id: 'ativas', label: 'Ativas', icon: 'ph-check-circle' },
+      { id: 'inativas', label: 'Inativas', icon: 'ph-prohibit' }
     ]; track opcao.id) {
       <button
         type="button"
-        class="rounded-lg px-3 py-1.5 transition"
+        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition"
         [class]="
           filtroAtivo() === opcao.id
-            ? 'bg-emerald-500/15 text-emerald-300'
-            : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+            ? 'bg-navy-800 text-white'
+            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
         "
         (click)="aplicarFiltro($any(opcao.id))"
       >
+        <i class="ph {{ opcao.icon }}" aria-hidden="true"></i>
         {{ opcao.label }}
       </button>
     }
@@ -87,40 +80,92 @@
   @if (carregando()) {
     <p class="text-sm text-slate-500">Carregando empresas…</p>
   } @else if (empresas().length === 0) {
-    <p class="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-sm text-slate-500">
-      Nenhuma empresa encontrada.
-    </p>
+    <div class="admin-card border-dashed px-4 py-12 text-center">
+      <i class="ph ph-buildings text-3xl text-slate-300" aria-hidden="true"></i>
+      <p class="mt-3 text-sm text-slate-500">Nenhuma empresa encontrada.</p>
+    </div>
   } @else {
-    <div class="overflow-hidden rounded-xl border border-slate-800">
+    <div class="admin-table-wrap">
       <table class="w-full text-left text-sm">
-        <thead class="bg-slate-900/80 text-xs uppercase tracking-wide text-slate-500">
+        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 font-medium">Empresa</th>
             <th class="px-4 py-3 font-medium">Código</th>
             <th class="px-4 py-3 font-medium">Status</th>
-            <th class="px-4 py-3 font-medium"></th>
+            <th class="px-4 py-3 font-medium text-right">Ações</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-800">
+        <tbody class="divide-y divide-slate-100">
           @for (empresa of empresas(); track empresa.id) {
-            <tr class="hover:bg-slate-900/40">
-              <td class="px-4 py-3 font-medium text-slate-100">{{ empresa.nome }}</td>
-              <td class="px-4 py-3 text-slate-400">{{ empresa.codigo }}</td>
+            <tr class="transition hover:bg-slate-50">
               <td class="px-4 py-3">
-                <span
-                  class="rounded-full px-2.5 py-0.5 text-xs"
-                  [class]="empresa.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
-                >
-                  {{ empresa.ativo ? 'Ativa' : 'Inativa' }}
-                </span>
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700"
+                  >
+                    <i class="ph ph-building-office" aria-hidden="true"></i>
+                  </span>
+                  <span class="font-medium text-slate-900">{{ empresa.nome }}</span>
+                </div>
               </td>
-              <td class="px-4 py-3 text-right">
-                <a
-                  [routerLink]="['/admin/empresas', empresa.id]"
-                  class="text-emerald-400 hover:text-emerald-300"
-                >
-                  Gerenciar
-                </a>
+              <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ empresa.codigo }}</td>
+              <td class="px-4 py-3">
+                @if (empresa.ativo) {
+                  <span class="admin-badge-ok">
+                    <i class="ph ph-check" aria-hidden="true"></i>
+                    Ativa
+                  </span>
+                } @else {
+                  <span class="admin-badge-off">Inativa</span>
+                }
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap items-center justify-end gap-1.5">
+                  <a
+                    [routerLink]="['/admin/empresas', empresa.id]"
+                    [queryParams]="{ aba: 'dados' }"
+                    title="Dados cadastrais"
+                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <i class="ph ph-identification-card text-sm" aria-hidden="true"></i>
+                    Dados
+                  </a>
+                  <a
+                    [routerLink]="['/admin/empresas', empresa.id]"
+                    [queryParams]="{ aba: 'licencas' }"
+                    title="Licenças e teto"
+                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <i class="ph ph-certificate text-sm" aria-hidden="true"></i>
+                    Licenças
+                  </a>
+                  <a
+                    [routerLink]="['/admin/empresas', empresa.id]"
+                    [queryParams]="{ aba: 'admins' }"
+                    title="Administradores da empresa"
+                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <i class="ph ph-users-three text-sm" aria-hidden="true"></i>
+                    Admins
+                  </a>
+                  <a
+                    [routerLink]="['/admin/empresas', empresa.id]"
+                    [queryParams]="{ aba: 'modulos' }"
+                    title="Módulos do tenant"
+                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    <i class="ph ph-squares-four text-sm" aria-hidden="true"></i>
+                    Módulos
+                  </a>
+                  <a
+                    [routerLink]="['/admin/empresas', empresa.id]"
+                    class="inline-flex items-center gap-1 rounded-lg bg-navy-800 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-navy-700"
+                    title="Abrir gestão completa"
+                  >
+                    <i class="ph ph-arrow-square-out text-sm" aria-hidden="true"></i>
+                    Abrir
+                  </a>
+                </div>
               </td>
             </tr>
           }

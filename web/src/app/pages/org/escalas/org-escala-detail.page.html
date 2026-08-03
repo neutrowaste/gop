@@ -1,0 +1,265 @@
+<div class="px-6 py-8 lg:px-10">
+  <a
+    routerLink="/org/escalas"
+    class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-navy-800"
+  >
+    <i class="ph ph-arrow-left" aria-hidden="true"></i>
+    Escala
+  </a>
+
+  @if (carregando()) {
+    <p class="mt-6 text-sm text-slate-500">Carregando escala…</p>
+  } @else if (escala(); as item) {
+    <header class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-[0.16em] text-navy-600">Escala</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+          {{ item.data }} · {{ turnoLabels[item.turno] }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ item.setorNome }} · {{ item.equipeNome }} · {{ item.equipamentoCodigo }}
+        </p>
+      </div>
+      <div class="flex flex-col items-end gap-2">
+        @if (!item.ativo) {
+          <span class="admin-badge-off">Cancelada</span>
+        } @else if (item.status === 'PUBLICADA') {
+          <span class="admin-badge-ok">Publicada</span>
+        } @else {
+          <span class="admin-badge-info">Rascunho</span>
+        }
+      </div>
+    </header>
+
+    @if (erro(); as mensagem) {
+      <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+    }
+    @if (ok(); as mensagem) {
+      <div class="admin-alert-ok mb-4">{{ mensagem }}</div>
+    }
+
+    @if (item.status === 'PUBLICADA' && item.ativo) {
+      <div class="mb-4 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-800">
+        Escala publicada: o motor de regras já pode processar as posições deste dia/turno. Despublique
+        para editar os campos da amarração.
+      </div>
+    }
+
+    <form class="admin-card max-w-2xl space-y-4 p-5" [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="data">Data</label>
+          <input id="data" type="date" formControlName="data" class="admin-input" />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="turno">Turno</label>
+          <select id="turno" formControlName="turno" class="admin-input">
+            @for (t of turnoOpcoes; track t) {
+              <option [ngValue]="t">{{ turnoLabels[t] }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="setorId">Setor</label>
+          <select id="setorId" formControlName="setorId" class="admin-input">
+            @for (setor of setores(); track setor.id) {
+              <option [ngValue]="setor.id">{{ setor.nome }}</option>
+            }
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="equipeId">Equipe</label>
+          <select id="equipeId" formControlName="equipeId" class="admin-input">
+            @for (equipe of equipesDoSetor(); track equipe.id) {
+              <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="equipamentoId">Ativo GPS (Lutocar)</label>
+          <select id="equipamentoId" formControlName="equipamentoId" class="admin-input">
+            @for (equipamento of equipamentosDaEquipe(); track equipamento.id) {
+              <option [ngValue]="equipamento.id">{{ equipamento.codigo }}</option>
+            }
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="supervisorUsuarioId">Supervisor</label>
+          <select id="supervisorUsuarioId" formControlName="supervisorUsuarioId" class="admin-input">
+            @for (usuario of supervisores(); track usuario.id) {
+              <option [ngValue]="usuario.id">{{ usuario.nome }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-2">
+        @if (editavel()) {
+          <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+            <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+            Salvar
+          </button>
+        }
+        @if (item.ativo && item.status === 'RASCUNHO') {
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="salvando()"
+            (click)="publicar()"
+          >
+            <i class="ph ph-check-circle" aria-hidden="true"></i>
+            Publicar
+          </button>
+        }
+        @if (item.ativo && item.status === 'PUBLICADA') {
+          <button type="button" class="admin-btn-secondary" [disabled]="salvando()" (click)="despublicar()">
+            Despublicar
+          </button>
+        }
+        @if (item.ativo) {
+          <button type="button" class="admin-btn-danger" (click)="cancelar()">
+            <i class="ph ph-prohibit" aria-hidden="true"></i>
+            Cancelar escala
+          </button>
+        }
+      </div>
+    </form>
+
+    <section class="mt-10 max-w-4xl">
+      <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Trechos do dia</h3>
+          <p class="mt-1 text-sm text-slate-500">
+            Plano de execução (RN-001): trechos e ordem que o motor de cobertura valida ao processar o GPS.
+          </p>
+        </div>
+        @if (editavel()) {
+          <button type="button" class="admin-btn-secondary" (click)="abrirFormTrecho()">
+            <i class="ph ph-plus" aria-hidden="true"></i>
+            Adicionar trecho
+          </button>
+        }
+      </header>
+
+      @if (erroPlano(); as mensagem) {
+        <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+      }
+
+      @if (!editavel() && item.status === 'RASCUNHO') {
+        <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Escala cancelada: o plano não pode mais ser editado.
+        </div>
+      }
+
+      @if (mostrarFormTrecho()) {
+        <form
+          class="admin-card mb-4 grid gap-3 p-4 sm:grid-cols-[1fr_120px_auto]"
+          [formGroup]="formTrecho"
+          (ngSubmit)="adicionarTrecho()"
+        >
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-500" for="trechoId">Trecho</label>
+            <select id="trechoId" formControlName="trechoId" class="admin-input">
+              <option [ngValue]="0" disabled>Selecione</option>
+              @for (trecho of trechosNaoAdicionados(); track trecho.id) {
+                <option [ngValue]="trecho.id">{{ trecho.codigo }} · {{ trecho.ruaNome }}</option>
+              }
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-500" for="ordemTrecho">Ordem</label>
+            <input id="ordemTrecho" type="number" min="1" formControlName="ordem" class="admin-input" />
+          </div>
+          <div class="flex items-end gap-2">
+            <button type="submit" class="admin-btn-primary" [disabled]="salvandoPlano()">
+              <i class="ph ph-check" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="admin-btn-secondary" (click)="fecharFormTrecho()">
+              <i class="ph ph-x" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (carregandoPlano()) {
+        <p class="text-sm text-slate-500">Carregando plano…</p>
+      } @else if (trechosDoDia().length === 0) {
+        <div class="admin-card border-dashed px-4 py-10 text-center">
+          <i class="ph ph-path text-3xl text-slate-300" aria-hidden="true"></i>
+          <p class="mt-3 text-sm text-slate-500">Nenhum trecho no plano deste dia ainda.</p>
+        </div>
+      } @else {
+        <div class="admin-table-wrap">
+          <table class="w-full text-left text-sm">
+            <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-4 py-3 font-medium">Ordem</th>
+                <th class="px-4 py-3 font-medium">Trecho</th>
+                <th class="px-4 py-3 font-medium">Status</th>
+                <th class="px-4 py-3 font-medium">Progresso</th>
+                <th class="px-4 py-3 font-medium">Início/Meio/Fim</th>
+                <th class="px-4 py-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (trecho of trechosDoDia(); track trecho.id) {
+                <tr class="hover:bg-slate-50">
+                  <td class="px-4 py-3 text-slate-700">
+                    @if (editavel()) {
+                      <input
+                        type="number"
+                        min="1"
+                        class="admin-input w-16 px-2 py-1"
+                        [value]="trecho.ordem"
+                        (change)="atualizarOrdem(trecho, $any($event.target).value)"
+                      />
+                    } @else {
+                      {{ trecho.ordem }}
+                    }
+                  </td>
+                  <td class="px-4 py-3">
+                    <p class="font-medium text-slate-900">{{ trecho.trechoCodigo }}</p>
+                    <p class="text-xs text-slate-500">{{ trecho.ruaNome }}</p>
+                  </td>
+                  <td class="px-4 py-3">
+                    @if (trecho.status === 'EXECUTADO' || trecho.status === 'JUSTIFICADO') {
+                      <span class="admin-badge-ok">{{ trecho.status }}</span>
+                    } @else if (trecho.status === 'SUSPEITO' || trecho.status === 'FORA_DA_ROTA') {
+                      <span class="admin-badge-warn">{{ trecho.status }}</span>
+                    } @else {
+                      <span class="admin-badge-info">{{ trecho.status }}</span>
+                    }
+                  </td>
+                  <td class="px-4 py-3 text-slate-700">
+                    {{ trecho.percentualExecutado | number: '1.0-1' }}%
+                    <span class="text-xs text-slate-400">({{ trecho.quantidadePosicoesValidas }} posições)</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span [class.text-emerald-600]="trecho.tevePosicaoInicio" class="text-slate-300">●</span>
+                    <span [class.text-emerald-600]="trecho.tevePosicaoMeio" class="text-slate-300">●</span>
+                    <span [class.text-emerald-600]="trecho.tevePosicaoFim" class="text-slate-300">●</span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    @if (editavel()) {
+                      <button
+                        type="button"
+                        class="text-sm font-medium text-rose-600 hover:text-rose-800"
+                        (click)="removerTrecho(trecho)"
+                      >
+                        Remover
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</div>

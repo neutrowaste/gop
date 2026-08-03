@@ -1,10 +1,9 @@
 package br.com.gop.services;
 
 import br.com.gop.models.Licenca;
-import br.com.gop.models.StatusAtivo;
 import br.com.gop.models.StatusLicenca;
 import br.com.gop.models.TetoAtivosResponse;
-import br.com.gop.repositories.AtivoRepository;
+import br.com.gop.repositories.EquipamentoRepository;
 import br.com.gop.repositories.LicencaRepository;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -12,19 +11,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+/**
+ * Controla o teto contratado de GPS/Lutocares por empresa (RN faturamento por ativo).
+ * Na Fase 1 o consumo é o cadastro de Equipamento (Lutocar) ativo.
+ */
 @Service
 @Profile("postgres")
 public class ControleTetoAtivosService {
 
 	private final LicencaRepository licencaRepository;
-	private final AtivoRepository ativoRepository;
+	private final EquipamentoRepository equipamentoRepository;
 
 	public ControleTetoAtivosService(
 		LicencaRepository licencaRepository,
-		AtivoRepository ativoRepository
+		EquipamentoRepository equipamentoRepository
 	) {
 		this.licencaRepository = licencaRepository;
-		this.ativoRepository = ativoRepository;
+		this.equipamentoRepository = equipamentoRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -46,7 +49,10 @@ public class ControleTetoAtivosService {
 	public void validarNovoAtivo(Long empresaId) {
 		TetoAtivosResponse teto = consultar(empresaId);
 		if (!teto.permiteNovoAtivo()) {
-			throw new RegraNegocioException("Teto de ativos contratado foi atingido");
+			throw new RegraNegocioException(
+				"Teto de Lutocares (GPS) contratado foi atingido ("
+					+ teto.ativosEmUso() + "/" + teto.tetoAtivos() + ")"
+			);
 		}
 	}
 
@@ -55,7 +61,7 @@ public class ControleTetoAtivosService {
 		long ativosEmUso = contarAtivosEmUso(empresaId);
 		if (novoTeto < ativosEmUso) {
 			throw new RegraNegocioException(
-				"O teto não pode ser menor que a quantidade de ativos em uso: " + ativosEmUso
+				"O teto não pode ser menor que a quantidade de Lutocares (GPS) em uso: " + ativosEmUso
 			);
 		}
 	}
@@ -66,9 +72,6 @@ public class ControleTetoAtivosService {
 	}
 
 	private long contarAtivosEmUso(Long empresaId) {
-		return ativoRepository.countByEmpresaIdAndAtivoTrueAndStatus(
-			empresaId,
-			StatusAtivo.ATIVO
-		);
+		return equipamentoRepository.countByEmpresaIdAndAtivoTrue(empresaId);
 	}
 }

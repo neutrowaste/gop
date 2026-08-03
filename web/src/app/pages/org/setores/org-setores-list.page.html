@@ -1,0 +1,142 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+        <i class="ph ph-map-trifold" aria-hidden="true"></i>
+        Cadastros
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Setores</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Setores da empresa (município informado no cadastro)
+      </p>
+    </div>
+    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+      <i class="ph ph-plus" aria-hidden="true"></i>
+      Novo setor
+    </button>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+  }
+
+  @if (mostrarForm()) {
+    <form class="admin-card mb-6 grid max-w-xl gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
+        Novo setor
+      </h3>
+
+      @if (!novaCidade() && cidades().length > 0) {
+        <div class="space-y-1">
+          <label class="text-xs font-medium text-slate-500" for="cidadeId">Município</label>
+          <select id="cidadeId" formControlName="cidadeId" class="admin-input">
+            <option [ngValue]="0" disabled>Selecione</option>
+            @for (cidade of cidades(); track cidade.id) {
+              <option [ngValue]="cidade.id">{{ cidade.nome }} ({{ cidade.uf }})</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="text-xs font-medium text-navy-700 hover:text-navy-900"
+            (click)="alternarNovaCidade(true)"
+          >
+            + Novo município
+          </button>
+        </div>
+      } @else {
+        <div class="grid gap-3 sm:grid-cols-[1fr_5rem]">
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-500" for="novaCidadeNome">Município</label>
+            <input id="novaCidadeNome" formControlName="novaCidadeNome" class="admin-input" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-500" for="novaCidadeUf">UF</label>
+            <input
+              id="novaCidadeUf"
+              formControlName="novaCidadeUf"
+              maxlength="2"
+              class="admin-input uppercase"
+            />
+          </div>
+        </div>
+        @if (cidades().length > 0) {
+          <button
+            type="button"
+            class="text-left text-xs text-slate-500 hover:text-slate-800"
+            (click)="alternarNovaCidade(false)"
+          >
+            Usar município já cadastrado
+          </button>
+        }
+      }
+
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="codigo">Código (opcional)</label>
+        <input id="codigo" formControlName="codigo" class="admin-input" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="nome">Nome do setor</label>
+        <input id="nome" formControlName="nome" class="admin-input" />
+      </div>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-check" aria-hidden="true"></i>
+          Criar
+        </button>
+        <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
+      </div>
+    </form>
+  }
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando setores…</p>
+  } @else if (setores().length === 0) {
+    <div class="admin-card border-dashed px-4 py-12 text-center">
+      <i class="ph ph-map-trifold text-3xl text-slate-300" aria-hidden="true"></i>
+      <p class="mt-3 text-sm text-slate-500">Nenhum setor cadastrado.</p>
+    </div>
+  } @else {
+    <div class="admin-table-wrap">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Setor</th>
+            <th class="px-4 py-3 font-medium">Município</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (setor of setores(); track setor.id) {
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3">
+                <p class="font-medium text-slate-900">{{ setor.nome }}</p>
+                @if (setor.codigo) {
+                  <p class="font-mono text-xs text-slate-500">{{ setor.codigo }}</p>
+                }
+              </td>
+              <td class="px-4 py-3 text-slate-500">{{ setor.cidadeNome }}</td>
+              <td class="px-4 py-3">
+                @if (setor.ativo) {
+                  <span class="admin-badge-ok">Ativo</span>
+                } @else {
+                  <span class="admin-badge-off">Inativo</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/org/setores', setor.id]"
+                  class="inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:text-navy-900"
+                >
+                  Abrir
+                  <i class="ph ph-caret-right" aria-hidden="true"></i>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

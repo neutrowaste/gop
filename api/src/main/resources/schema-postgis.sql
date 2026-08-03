@@ -1,6 +1,5 @@
--- Setup PostGIS (Fase 0). Geometrias de negócio entram nas fases 1+.
--- Instale o PostGIS no PostgreSQL (Stack Builder) e execute manualmente:
---   CREATE EXTENSION IF NOT EXISTS postgis;
--- Enquanto a extensão não estiver disponível, este script permanece no-op
--- para não bloquear a criação do schema da Fase 0.
-SELECT 1;
+-- Extensão espacial (Fase 1+). Instale o PostGIS no PostgreSQL via Stack Builder
+-- (Application Stack Builder → Spatial Extensions → PostGIS) e reinicie o serviço.
+-- Se a extensão ainda não estiver no servidor, o boot continua (continue-on-error)
+-- e as tabelas com geometry serão criadas no próximo restart após a instalação.
+CREATE EXTENSION IF NOT EXISTS postgis;

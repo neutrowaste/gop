@@ -1,0 +1,122 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+        <i class="ph ph-warning-circle text-base" aria-hidden="true"></i>
+        Varrição
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Ocorrências</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Desvios automáticos do motor de regras (RN-001): ordem do plano violada e GPS em silêncio.
+      </p>
+    </div>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+  }
+
+  <form class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5" [formGroup]="filtro">
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroData">Data</label>
+      <input id="filtroData" type="date" formControlName="data" class="admin-input" />
+    </div>
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroSetor">Setor</label>
+      <select id="filtroSetor" formControlName="setorId" class="admin-input">
+        <option [ngValue]="0">Todos</option>
+        @for (setor of setores(); track setor.id) {
+          <option [ngValue]="setor.id">{{ setor.nome }}</option>
+        }
+      </select>
+    </div>
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroEquipe">Equipe</label>
+      <select id="filtroEquipe" formControlName="equipeId" class="admin-input">
+        <option [ngValue]="0">Todas</option>
+        @for (equipe of equipesDoSetor(); track equipe.id) {
+          <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
+        }
+      </select>
+    </div>
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroTipo">Tipo</label>
+      <select id="filtroTipo" formControlName="tipo" class="admin-input">
+        <option value="">Todos</option>
+        <option value="ORDEM_PLANO_VIOLADA">{{ tipoLabels.ORDEM_PLANO_VIOLADA }}</option>
+        <option value="GPS_SILENCIOSO">{{ tipoLabels.GPS_SILENCIOSO }}</option>
+      </select>
+    </div>
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroStatus">Status</label>
+      <select id="filtroStatus" formControlName="status" class="admin-input">
+        <option value="">Todos</option>
+        <option value="ABERTA">Aberta</option>
+        <option value="RESOLVIDA">Resolvida</option>
+        <option value="JUSTIFICADA">Justificada</option>
+      </select>
+    </div>
+  </form>
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando ocorrências…</p>
+  } @else if (ocorrencias().length === 0) {
+    <div class="admin-card border-dashed px-4 py-12 text-center">
+      <i class="ph ph-check-circle text-3xl text-slate-300" aria-hidden="true"></i>
+      <p class="mt-3 text-sm text-slate-500">Nenhuma ocorrência encontrada para os filtros selecionados.</p>
+    </div>
+  } @else {
+    <div class="admin-table-wrap">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Data</th>
+            <th class="px-4 py-3 font-medium">Setor / Equipe</th>
+            <th class="px-4 py-3 font-medium">Ativo GPS</th>
+            <th class="px-4 py-3 font-medium">Tipo</th>
+            <th class="px-4 py-3 font-medium">Descrição</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (ocorrencia of ocorrencias(); track ocorrencia.id) {
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 text-slate-700">{{ ocorrencia.escalaData }}</td>
+              <td class="px-4 py-3 text-slate-700">
+                {{ ocorrencia.setorNome }} · {{ ocorrencia.equipeNome }}
+              </td>
+              <td class="px-4 py-3 text-slate-500">{{ ocorrencia.equipamentoCodigo }}</td>
+              <td class="px-4 py-3">
+                @if (ocorrencia.tipo === 'GPS_SILENCIOSO') {
+                  <span class="admin-badge-warn">{{ tipoLabels[ocorrencia.tipo] }}</span>
+                } @else {
+                  <span class="admin-badge-info">{{ tipoLabels[ocorrencia.tipo] }}</span>
+                }
+              </td>
+              <td class="px-4 py-3 max-w-sm text-slate-600">{{ ocorrencia.descricao }}</td>
+              <td class="px-4 py-3">
+                @if (ocorrencia.status === 'ABERTA') {
+                  <span class="admin-badge-warn">Aberta</span>
+                } @else if (ocorrencia.status === 'JUSTIFICADA') {
+                  <span class="admin-badge-info">Justificada</span>
+                } @else {
+                  <span class="admin-badge-ok">Resolvida</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/org/ocorrencias', ocorrencia.id]"
+                  class="inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:text-navy-900"
+                >
+                  Abrir
+                  <i class="ph ph-caret-right" aria-hidden="true"></i>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

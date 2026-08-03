@@ -1,0 +1,400 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="text-xs uppercase tracking-[0.24em] text-navy-600">Cadastros</p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Equipes</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Paridade com o legado: equipes, garis e lutocares na mesma tela
+      </p>
+    </div>
+  </header>
+
+  <div class="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+    <button
+      type="button"
+      class="rounded-lg px-3 py-1.5 text-sm transition"
+      [class]="
+        aba() === 'equipes'
+          ? 'bg-navy-800 text-white'
+          : 'text-slate-600 hover:text-slate-900'
+      "
+      (click)="selecionarAba('equipes')"
+    >
+      Equipes
+    </button>
+    <button
+      type="button"
+      class="rounded-lg px-3 py-1.5 text-sm transition"
+      [class]="
+        aba() === 'garis'
+          ? 'bg-navy-800 text-white'
+          : 'text-slate-600 hover:text-slate-900'
+      "
+      (click)="selecionarAba('garis')"
+    >
+      Garis
+    </button>
+    <button
+      type="button"
+      class="rounded-lg px-3 py-1.5 text-sm transition"
+      [class]="
+        aba() === 'lutocares'
+          ? 'bg-navy-800 text-white'
+          : 'text-slate-600 hover:text-slate-900'
+      "
+      (click)="selecionarAba('lutocares')"
+    >
+      Lutocares
+    </button>
+  </div>
+
+  @if (erro(); as mensagem) {
+    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+      {{ mensagem }}
+    </div>
+  }
+  @if (ok(); as mensagem) {
+    <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+      {{ mensagem }}
+    </div>
+  }
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando…</p>
+  } @else if (aba() === 'equipes') {
+    <div class="mb-4 flex justify-end">
+      <button
+        type="button"
+        class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700"
+        (click)="abrirFormEquipe()"
+      >
+        Nova equipe
+      </button>
+    </div>
+
+    @if (mostrarFormEquipe()) {
+      <form
+        class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-4"
+        [formGroup]="formEquipe"
+        (ngSubmit)="salvarEquipe()"
+      >
+        <h3 class="text-sm font-medium text-slate-800">
+          {{ editandoEquipeId() ? 'Editar equipe' : 'Nova equipe' }}
+        </h3>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="setorId">Setor</label>
+          <select
+            id="setorId"
+            formControlName="setorId"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          >
+            <option [ngValue]="0" disabled>Selecione</option>
+            @for (setor of setores(); track setor.id) {
+              <option [ngValue]="setor.id">{{ setor.nome }}</option>
+            }
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="nomeEquipe">Nome</label>
+          <input
+            id="nomeEquipe"
+            formControlName="nome"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            [disabled]="salvando()"
+          >
+            Salvar
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500"
+            (click)="fecharFormEquipe()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (equipes().length === 0) {
+      <p class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+        Nenhuma equipe cadastrada.
+      </p>
+    } @else {
+      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+        @for (equipe of equipes(); track equipe.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div>
+              <p class="font-medium text-slate-900">{{ equipe.nome }}</p>
+              <p class="text-xs text-slate-500">{{ equipe.setorNome }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                class="rounded-full px-2.5 py-0.5 text-xs"
+                [class]="
+                  equipe.ativo ? 'bg-navy-800 text-white' : 'bg-slate-100 text-slate-500'
+                "
+              >
+                {{ equipe.ativo ? 'Ativa' : 'Inativa' }}
+              </span>
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-400"
+                (click)="abrirFormEquipe(equipe)"
+              >
+                Editar
+              </button>
+              @if (equipe.ativo) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-rose-500/40 px-2.5 py-1 text-xs text-rose-600"
+                  (click)="desativarEquipe(equipe)"
+                >
+                  Desativar
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  } @else if (aba() === 'garis') {
+    <div class="mb-4 flex justify-end">
+      <button
+        type="button"
+        class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700"
+        (click)="abrirFormGari()"
+      >
+        Novo gari
+      </button>
+    </div>
+
+    @if (mostrarFormGari()) {
+      <form
+        class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-4"
+        [formGroup]="formGari"
+        (ngSubmit)="salvarGari()"
+      >
+        <h3 class="text-sm font-medium text-slate-800">
+          {{ editandoGariId() ? 'Editar gari' : 'Novo gari' }}
+        </h3>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="equipeGari">Equipe</label>
+          <select
+            id="equipeGari"
+            formControlName="equipeId"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          >
+            <option [ngValue]="0" disabled>Selecione</option>
+            @for (equipe of equipes(); track equipe.id) {
+              @if (equipe.ativo) {
+                <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="nomeGari">Nome</label>
+          <input
+            id="nomeGari"
+            formControlName="nome"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="matricula">Matrícula</label>
+          <input
+            id="matricula"
+            formControlName="matricula"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            [disabled]="salvando()"
+          >
+            Salvar
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500"
+            (click)="fecharFormGari()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (garis().length === 0) {
+      <p class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+        Nenhum gari cadastrado.
+      </p>
+    } @else {
+      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+        @for (gari of garis(); track gari.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div>
+              <p class="font-medium text-slate-900">{{ gari.nome }}</p>
+              <p class="text-xs text-slate-500">{{ gari.matricula }} · {{ gari.equipeNome }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-400"
+                (click)="abrirFormGari(gari)"
+              >
+                Editar
+              </button>
+              @if (gari.ativo) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-rose-500/40 px-2.5 py-1 text-xs text-rose-600"
+                  (click)="desativarGari(gari)"
+                >
+                  Desativar
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      @if (teto(); as t) {
+        <p class="text-sm text-slate-600">
+          Lutocares (GPS):
+          <span class="font-semibold tabular-nums text-slate-900"
+            >{{ t.ativosEmUso }}/{{ t.tetoAtivos }}</span
+          >
+          · saldo
+          <span class="font-semibold tabular-nums text-navy-800">{{ t.saldoDisponivel }}</span>
+        </p>
+      } @else if (tetoErro(); as msg) {
+        <p class="text-sm text-amber-800">{{ msg }}</p>
+      } @else {
+        <span></span>
+      }
+      <button
+        type="button"
+        class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!podeCadastrarLutocar()"
+        [title]="
+          podeCadastrarLutocar()
+            ? 'Cadastrar novo Lutocar'
+            : 'Teto de Lutocares atingido ou sem licença vigente'
+        "
+        (click)="abrirFormLutocar()"
+      >
+        Novo lutocar
+      </button>
+    </div>
+
+    @if (mostrarFormLutocar()) {
+      <form
+        class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-4"
+        [formGroup]="formLutocar"
+        (ngSubmit)="salvarLutocar()"
+      >
+        <h3 class="text-sm font-medium text-slate-800">
+          {{ editandoLutocarId() ? 'Editar lutocar' : 'Novo lutocar' }}
+        </h3>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="equipeLutocar">Equipe</label>
+          <select
+            id="equipeLutocar"
+            formControlName="equipeId"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          >
+            <option [ngValue]="0" disabled>Selecione</option>
+            @for (equipe of equipes(); track equipe.id) {
+              @if (equipe.ativo) {
+                <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="codigoLutocar">Código</label>
+          <input
+            id="codigoLutocar"
+            formControlName="codigo"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="descLutocar">Descrição (opcional)</label>
+          <input
+            id="descLutocar"
+            formControlName="descricao"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            [disabled]="salvando()"
+          >
+            Salvar
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500"
+            (click)="fecharFormLutocar()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (lutocares().length === 0) {
+      <p class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+        Nenhum lutocar cadastrado.
+      </p>
+    } @else {
+      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+        @for (lutocar of lutocares(); track lutocar.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div>
+              <p class="font-medium text-slate-900">{{ lutocar.codigo }}</p>
+              <p class="text-xs text-slate-500">
+                {{ lutocar.equipeNome }}
+                @if (lutocar.descricao) {
+                  <span>· {{ lutocar.descricao }}</span>
+                }
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-400"
+                (click)="abrirFormLutocar(lutocar)"
+              >
+                Editar
+              </button>
+              @if (lutocar.ativo) {
+                <button
+                  type="button"
+                  class="rounded-lg border border-rose-500/40 px-2.5 py-1 text-xs text-rose-600"
+                  (click)="desativarLutocar(lutocar)"
+                >
+                  Desativar
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

@@ -1,21 +1,27 @@
 <div class="px-6 py-8 lg:px-10">
   <a
     routerLink="/app"
-    class="text-sm text-emerald-400 transition hover:text-emerald-300"
+    class="inline-flex items-center gap-1 text-sm font-medium text-navy-700 transition hover:text-navy-900"
   >
-    ← Voltar aos módulos
+    <i class="ph ph-arrow-left" aria-hidden="true"></i>
+    Voltar aos módulos
   </a>
 
   <header class="mt-6 mb-8 max-w-2xl">
-    <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ codigo() }}</p>
-    <h2 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{{ nome() }}</h2>
-    <p class="mt-2 text-sm text-slate-400">
+    <p class="font-mono text-xs font-medium uppercase tracking-[0.16em] text-navy-600">
+      {{ codigo() }}
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+      {{ nome() }}
+    </h2>
+    <p class="mt-2 text-sm text-slate-500">
       Este módulo está liberado para você. A tela operacional será implementada nas próximas fases.
     </p>
   </header>
 
-  <div class="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-14 text-center">
-    <p class="text-base font-medium text-slate-200">Em breve</p>
+  <div class="admin-card border-dashed px-6 py-14 text-center">
+    <i class="ph ph-hourglass text-3xl text-slate-300" aria-hidden="true"></i>
+    <p class="mt-3 text-base font-medium text-slate-800">Em breve</p>
     <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
       O fluxo ponta a ponta de {{ nome() }} ainda não está disponível nesta versão.
     </p>

@@ -8,6 +8,7 @@ import {
   OrganizacaoUsuarioRequest,
   UsuarioModulo,
 } from '../models/organizacao';
+import { TetoAtivos } from '../models/licenca';
 import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -17,6 +18,10 @@ export class OrganizacaoApiService {
 
   private get base(): string {
     return `${this.api.baseUrl}/v1/org`;
+  }
+
+  consultarTeto(): Observable<TetoAtivos> {
+    return this.http.get<TetoAtivos>(`${this.base}/teto-ativos`);
   }
 
   listarUsuarios(): Observable<OrganizacaoUsuario[]> {

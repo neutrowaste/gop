@@ -1,8 +1,79 @@
 @use "tailwindcss";
+@import "@phosphor-icons/web/regular/style.css";
+@import "@phosphor-icons/web/bold/style.css";
+
+@theme {
+  --color-navy-50: #eef3f8;
+  --color-navy-100: #d6e2f0;
+  --color-navy-200: #b0c7dd;
+  --color-navy-500: #1e4a7a;
+  --color-navy-600: #163a61;
+  --color-navy-700: #0f2c4a;
+  --color-navy-800: #0b1f3a;
+  --color-navy-900: #071528;
+}
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #020617;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Utilitários compartilhados dos painéis admin */
+.admin-card {
+  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+.admin-table-wrap {
+  @apply overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+.admin-input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-navy-600 focus:ring-2 focus:ring-navy-600/20;
+}
+
+.admin-btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.admin-btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+}
+
+.admin-btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50;
+}
+
+.admin-badge-ok {
+  @apply inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700;
+}
+
+.admin-badge-off {
+  @apply inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600;
+}
+
+.admin-badge-info {
+  @apply inline-flex items-center gap-1 rounded-full bg-navy-50 px-2.5 py-0.5 text-xs font-medium text-navy-700;
+}
+
+.admin-badge-warn {
+  @apply inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700;
+}
+
+.admin-alert-error {
+  @apply rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800;
+}
+
+.admin-alert-ok {
+  @apply rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800;
+}
+
+.admin-nav-link {
+  @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-navy-800;
+}
+
+.admin-nav-link.active {
+  @apply bg-navy-50 font-medium text-navy-800;
 }

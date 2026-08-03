@@ -93,6 +93,18 @@ public class UsuarioModuloService {
 			.toList();
 	}
 
+	/**
+	 * Checa se o usuário tem o módulo (código) liberado, sem exigir papel de
+	 * admin — usado por recursos operacionais acessíveis a funcionários
+	 * comuns quando o módulo correspondente está liberado (ex.: mapa
+	 * operacional gated pelo módulo MONITORAMENTO).
+	 */
+	@Transactional(readOnly = true)
+	public boolean possuiModuloLiberado(Long usuarioId, String codigoModulo) {
+		return usuarioModuloRepository
+			.existsByUsuarioIdAndLiberadoTrueAndModulo_AtivoTrueAndModulo_CodigoIgnoreCase(usuarioId, codigoModulo);
+	}
+
 	@Transactional
 	public UsuarioModuloResponse atualizar(
 		Long empresaId,

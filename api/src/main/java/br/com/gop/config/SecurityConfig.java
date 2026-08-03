@@ -1,9 +1,13 @@
 package br.com.gop.config;
 
 import br.com.gop.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -31,7 +35,8 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(
 		HttpSecurity http,
-		JwtAuthenticationFilter jwtAuthenticationFilter
+		JwtAuthenticationFilter jwtAuthenticationFilter,
+		ObjectMapper objectMapper
 	) throws Exception {
 		http
 			.csrf(csrf -> csrf.disable())
@@ -49,14 +54,41 @@ public class SecurityConfig {
 			)
 			.exceptionHandling(exceptions -> exceptions
 				.authenticationEntryPoint((request, response, exception) ->
-					response.sendError(401, "Autenticação obrigatória")
+					escreverProblema(
+						response,
+						objectMapper,
+						HttpStatus.UNAUTHORIZED,
+						"Não autorizado",
+						"Autenticação obrigatória"
+					)
 				)
 				.accessDeniedHandler((request, response, exception) ->
-					response.sendError(403, "Acesso negado")
+					escreverProblema(response, objectMapper, HttpStatus.FORBIDDEN, "Acesso negado", "Acesso negado")
 				)
 			)
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
+	}
+
+	/**
+	 * Falhas de autenticação/autorização são resolvidas pelo filtro de segurança
+	 * antes de chegar ao DispatcherServlet, então não passam pelo ApiExceptionHandler.
+	 * Escrevemos o mesmo formato ProblemDetail aqui para o frontend sempre ter um
+	 * campo "detail" e conseguir distinguir sessão expirada de outros erros.
+	 */
+	public static void escreverProblema(
+		jakarta.servlet.http.HttpServletResponse response,
+		ObjectMapper objectMapper,
+		HttpStatus status,
+		String titulo,
+		String detalhe
+	) throws java.io.IOException {
+		ProblemDetail problema = ProblemDetail.forStatus(status);
+		problema.setTitle(titulo);
+		problema.setDetail(detalhe);
+		response.setStatus(status.value());
+		response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+		response.getWriter().write(objectMapper.writeValueAsString(problema));
 	}
 
 	@Bean

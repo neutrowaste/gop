@@ -1,9 +1,8 @@
 package br.com.gop.services;
 
 import br.com.gop.models.Licenca;
-import br.com.gop.models.StatusAtivo;
 import br.com.gop.models.StatusLicenca;
-import br.com.gop.repositories.AtivoRepository;
+import br.com.gop.repositories.EquipamentoRepository;
 import br.com.gop.repositories.LicencaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +25,13 @@ class ControleTetoAtivosServiceTests {
 	private LicencaRepository licencaRepository;
 
 	@Mock
-	private AtivoRepository ativoRepository;
+	private EquipamentoRepository equipamentoRepository;
 
 	private ControleTetoAtivosService service;
 
 	@BeforeEach
 	void configurar() {
-		service = new ControleTetoAtivosService(licencaRepository, ativoRepository);
+		service = new ControleTetoAtivosService(licencaRepository, equipamentoRepository);
 	}
 
 	@Test
@@ -42,7 +41,7 @@ class ControleTetoAtivosServiceTests {
 		licenca.setTetoAtivos(10);
 		when(licencaRepository.findVigente(3L, StatusLicenca.ATIVA, LocalDate.now()))
 			.thenReturn(Optional.of(licenca));
-		when(ativoRepository.countByEmpresaIdAndAtivoTrueAndStatus(3L, StatusAtivo.ATIVO))
+		when(equipamentoRepository.countByEmpresaIdAndAtivoTrue(3L))
 			.thenReturn(8L);
 
 		var teto = service.consultar(3L);
@@ -55,15 +54,14 @@ class ControleTetoAtivosServiceTests {
 
 	@Test
 	void deveBloquearReducaoAbaixoDosAtivosEmUso() {
-		when(ativoRepository.countByEmpresaIdAndAtivoTrueAndStatus(3L, StatusAtivo.ATIVO))
+		when(equipamentoRepository.countByEmpresaIdAndAtivoTrue(3L))
 			.thenReturn(8L);
 
 		assertThatThrownBy(() -> service.validarNovoTeto(3L, 7))
 			.isInstanceOf(RegraNegocioException.class)
 			.hasMessageContaining("8");
 
-		verify(ativoRepository)
-			.countByEmpresaIdAndAtivoTrueAndStatus(3L, StatusAtivo.ATIVO);
+		verify(equipamentoRepository).countByEmpresaIdAndAtivoTrue(3L);
 	}
 
 	@Test
@@ -73,7 +71,7 @@ class ControleTetoAtivosServiceTests {
 		licenca.setTetoAtivos(2);
 		when(licencaRepository.findVigente(3L, StatusLicenca.ATIVA, LocalDate.now()))
 			.thenReturn(Optional.of(licenca));
-		when(ativoRepository.countByEmpresaIdAndAtivoTrueAndStatus(3L, StatusAtivo.ATIVO))
+		when(equipamentoRepository.countByEmpresaIdAndAtivoTrue(3L))
 			.thenReturn(2L);
 
 		assertThatThrownBy(() -> service.validarNovoAtivo(3L))

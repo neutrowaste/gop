@@ -1,0 +1,120 @@
+<div class="px-6 py-8 lg:px-10">
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+        <i class="ph ph-path" aria-hidden="true"></i>
+        Cadastros
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Trechos</h2>
+      <p class="mt-1 text-sm text-slate-500">Segmentos de via com geometria e status operacional</p>
+    </div>
+    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+      <i class="ph ph-plus" aria-hidden="true"></i>
+      Novo trecho
+    </button>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+  }
+
+  @if (mostrarForm()) {
+    <form class="admin-card mb-6 grid max-w-2xl gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
+        Novo trecho
+      </h3>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="ruaId">Rua</label>
+        <select id="ruaId" formControlName="ruaId" class="admin-input">
+          <option [ngValue]="0" disabled>Selecione</option>
+          @for (rua of ruas(); track rua.id) {
+            <option [ngValue]="rua.id">{{ rua.nome }}</option>
+          }
+        </select>
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" class="admin-input" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="status">Status</label>
+        <select id="status" formControlName="status" class="admin-input">
+          @for (st of statusOpcoes; track st) {
+            <option [ngValue]="st">{{ st }}</option>
+          }
+        </select>
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="geomWkt">Geometria (WKT LineString)</label>
+        <textarea
+          id="geomWkt"
+          formControlName="geomWkt"
+          rows="3"
+          class="admin-input font-mono text-xs"
+        ></textarea>
+      </div>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-check" aria-hidden="true"></i>
+          Criar
+        </button>
+        <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
+      </div>
+    </form>
+  }
+
+  @if (carregando()) {
+    <p class="text-sm text-slate-500">Carregando trechos…</p>
+  } @else if (trechos().length === 0) {
+    <div class="admin-card border-dashed px-4 py-12 text-center">
+      <i class="ph ph-path text-3xl text-slate-300" aria-hidden="true"></i>
+      <p class="mt-3 text-sm text-slate-500">Nenhum trecho cadastrado.</p>
+    </div>
+  } @else {
+    <div class="admin-table-wrap">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Código</th>
+            <th class="px-4 py-3 font-medium">Rua</th>
+            <th class="px-4 py-3 font-medium">Status op.</th>
+            <th class="px-4 py-3 font-medium">Execução</th>
+            <th class="px-4 py-3 font-medium">Cadastro</th>
+            <th class="px-4 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (trecho of trechos(); track trecho.id) {
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 font-medium text-slate-900">{{ trecho.codigo }}</td>
+              <td class="px-4 py-3 text-slate-500">{{ trecho.ruaNome }}</td>
+              <td class="px-4 py-3">
+                <span class="admin-badge-info">{{ trecho.status }}</span>
+              </td>
+              <td class="px-4 py-3 tabular-nums text-slate-700">
+                {{ trecho.percentualExecutado | number: '1.0-0' }}%
+              </td>
+              <td class="px-4 py-3">
+                @if (trecho.ativo) {
+                  <span class="admin-badge-ok">Ativo</span>
+                } @else {
+                  <span class="admin-badge-off">Inativo</span>
+                }
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a
+                  [routerLink]="['/org/trechos', trecho.id]"
+                  class="inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:text-navy-900"
+                >
+                  Abrir
+                  <i class="ph ph-caret-right" aria-hidden="true"></i>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -12,8 +12,8 @@ server:
 security:
   jwt:
     issuer: gop
-    # Dev local: sessão mais longa para operar o admin sem reautenticar a cada 15 min.
-    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:8h}
+    # Sessão operacional (admin empresa incluso): mínimo 6h; padrão 12h.
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:12h}
     # Apenas para desenvolvimento local. Em produção, JWT_SECRET é obrigatório.
     secret: ${JWT_SECRET:gop-local-dev-secret-change-me-2026}
 

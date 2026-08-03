@@ -15,7 +15,18 @@ import { AppShellPage } from './pages/app/app-shell.page';
 import { AppModuloPlaceholderPage } from './pages/app/modulo/app-modulo-placeholder.page';
 import { LoginPage } from './pages/login/login.page';
 import { OrgDashboardPage } from './pages/org/dashboard/org-dashboard.page';
+import { OrgEscalaDetailPage } from './pages/org/escalas/org-escala-detail.page';
+import { OrgEscalasListPage } from './pages/org/escalas/org-escalas-list.page';
+import { OrgEquipesListPage } from './pages/org/equipes/org-equipes-list.page';
+import { OrgOcorrenciaDetailPage } from './pages/org/ocorrencias/org-ocorrencia-detail.page';
+import { OrgOcorrenciasListPage } from './pages/org/ocorrencias/org-ocorrencias-list.page';
 import { OrgShellPage } from './pages/org/org-shell.page';
+import { OrgRuaDetailPage } from './pages/org/ruas/org-rua-detail.page';
+import { OrgRuasListPage } from './pages/org/ruas/org-ruas-list.page';
+import { OrgSetorDetailPage } from './pages/org/setores/org-setor-detail.page';
+import { OrgSetoresListPage } from './pages/org/setores/org-setores-list.page';
+import { OrgTrechoDetailPage } from './pages/org/trechos/org-trecho-detail.page';
+import { OrgTrechosListPage } from './pages/org/trechos/org-trechos-list.page';
 import { OrgUsuarioDetailPage } from './pages/org/usuarios/org-usuario-detail.page';
 import { OrgUsuariosListPage } from './pages/org/usuarios/org-usuarios-list.page';
 
@@ -41,6 +52,21 @@ export const routes: Routes = [
       { path: '', component: OrgDashboardPage },
       { path: 'usuarios', component: OrgUsuariosListPage },
       { path: 'usuarios/:id', component: OrgUsuarioDetailPage },
+      { path: 'setores', component: OrgSetoresListPage },
+      { path: 'setores/:id', component: OrgSetorDetailPage },
+      { path: 'ruas', component: OrgRuasListPage },
+      { path: 'ruas/:id', component: OrgRuaDetailPage },
+      { path: 'trechos', component: OrgTrechosListPage },
+      { path: 'trechos/:id', component: OrgTrechoDetailPage },
+      { path: 'equipes', component: OrgEquipesListPage },
+      {
+        path: 'mapa',
+        loadComponent: () => import('./pages/org/mapa/org-mapa.page').then((m) => m.OrgMapaPage),
+      },
+      { path: 'escalas', component: OrgEscalasListPage },
+      { path: 'escalas/:id', component: OrgEscalaDetailPage },
+      { path: 'ocorrencias', component: OrgOcorrenciasListPage },
+      { path: 'ocorrencias/:id', component: OrgOcorrenciaDetailPage },
     ],
   },
   {
@@ -49,6 +75,10 @@ export const routes: Routes = [
     canActivate: [authGuard, funcionarioGuard],
     children: [
       { path: '', component: AppHomePage },
+      {
+        path: 'modulos/MONITORAMENTO',
+        loadComponent: () => import('./pages/org/mapa/org-mapa.page').then((m) => m.OrgMapaPage),
+      },
       { path: 'modulos/:codigo', component: AppModuloPlaceholderPage },
     ],
   },

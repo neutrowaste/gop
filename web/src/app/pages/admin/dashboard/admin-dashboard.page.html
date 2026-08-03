@@ -1,49 +1,60 @@
 <div class="px-6 py-8 lg:px-10">
   <header class="mb-8">
-    <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">Admin Plataforma</p>
-    <h2 class="mt-2 text-2xl font-semibold tracking-tight">
+    <p class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-navy-600">
+      <i class="ph ph-shield-check" aria-hidden="true"></i>
+      Admin Plataforma
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
       Olá{{ usuario()?.nome ? ', ' + usuario()!.nome.split(' ')[0] : '' }}
     </h2>
-    <p class="mt-2 max-w-2xl text-sm text-slate-400">
-      Gerencie os clientes GOP: cadastre empresas e defina licenças com teto de ativos.
+    <p class="mt-2 max-w-2xl text-sm text-slate-500">
+      Gerencie os clientes GOP: cadastre empresas e defina licenças com teto de Lutocares (GPS).
     </p>
   </header>
 
   @if (erro(); as mensagem) {
-    <div class="mb-6 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-      {{ mensagem }}
+    <div class="admin-alert-error mb-6 flex items-start gap-2">
+      <i class="ph ph-warning-circle mt-0.5 text-base" aria-hidden="true"></i>
+      <span>{{ mensagem }}</span>
     </div>
   }
 
   <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Empresas</p>
-      <p class="mt-3 text-3xl font-semibold tabular-nums">
+    <article class="admin-card p-5">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Empresas</p>
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-50 text-navy-700">
+          <i class="ph ph-buildings text-lg" aria-hidden="true"></i>
+        </span>
+      </div>
+      <p class="mt-3 text-3xl font-semibold tabular-nums text-slate-900">
         {{ carregando() ? '—' : totalEmpresas() }}
       </p>
-      <p class="mt-1 text-sm text-slate-400">clientes cadastrados</p>
+      <p class="mt-1 text-sm text-slate-500">clientes cadastrados</p>
     </article>
-    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Ativas</p>
-      <p class="mt-3 text-3xl font-semibold tabular-nums text-emerald-300">
+
+    <article class="admin-card p-5">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ativas</p>
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+          <i class="ph ph-check-circle text-lg" aria-hidden="true"></i>
+        </span>
+      </div>
+      <p class="mt-3 text-3xl font-semibold tabular-nums text-navy-800">
         {{ carregando() ? '—' : empresasAtivas() }}
       </p>
-      <p class="mt-1 text-sm text-slate-400">com acesso liberado</p>
+      <p class="mt-1 text-sm text-slate-500">com acesso liberado</p>
     </article>
-    <article class="rounded-xl border border-slate-800 bg-slate-900/50 p-5 sm:col-span-2 lg:col-span-1">
-      <p class="text-xs uppercase tracking-wide text-slate-500">Ações</p>
+
+    <article class="admin-card p-5 sm:col-span-2 lg:col-span-1">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Ações rápidas</p>
       <div class="mt-4 flex flex-col gap-2">
-        <a
-          routerLink="/admin/empresas"
-          class="rounded-lg bg-emerald-500 px-3 py-2 text-center text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-        >
+        <a routerLink="/admin/empresas" class="admin-btn-primary">
+          <i class="ph ph-list-magnifying-glass" aria-hidden="true"></i>
           Gerenciar empresas
         </a>
-        <a
-          routerLink="/admin/empresas"
-          [queryParams]="{ nova: '1' }"
-          class="rounded-lg border border-slate-700 px-3 py-2 text-center text-sm text-slate-200 transition hover:border-slate-500"
-        >
+        <a routerLink="/admin/empresas" [queryParams]="{ nova: '1' }" class="admin-btn-secondary">
+          <i class="ph ph-plus" aria-hidden="true"></i>
           Nova empresa cliente
         </a>
       </div>
@@ -52,38 +63,88 @@
 
   <section class="mt-8">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-sm font-medium text-slate-300">Clientes recentes</h3>
-      <a routerLink="/admin/empresas" class="text-sm text-emerald-400 hover:text-emerald-300">Ver todos</a>
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <i class="ph ph-clock-countdown text-base text-navy-600" aria-hidden="true"></i>
+        Clientes recentes
+      </h3>
+      <a
+        routerLink="/admin/empresas"
+        class="inline-flex items-center gap-1 text-sm font-medium text-navy-700 hover:text-navy-900"
+      >
+        Ver todos
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </a>
     </div>
 
     @if (carregando()) {
       <p class="text-sm text-slate-500">Carregando…</p>
     } @else if (recentes().length === 0) {
-      <p class="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-sm text-slate-500">
-        Nenhuma empresa cadastrada ainda. Comece criando o primeiro cliente.
-      </p>
+      <div class="admin-card border-dashed px-4 py-10 text-center">
+        <i class="ph ph-buildings text-3xl text-slate-300" aria-hidden="true"></i>
+        <p class="mt-3 text-sm text-slate-500">
+          Nenhuma empresa cadastrada ainda. Comece criando o primeiro cliente.
+        </p>
+      </div>
     } @else {
-      <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-        @for (empresa of recentes(); track empresa.id) {
-          <li>
-            <a
-              [routerLink]="['/admin/empresas', empresa.id]"
-              class="flex items-center justify-between gap-4 px-4 py-3 transition hover:bg-slate-900/70"
-            >
-              <div>
-                <p class="font-medium text-slate-100">{{ empresa.nome }}</p>
-                <p class="text-xs text-slate-500">{{ empresa.codigo }}</p>
-              </div>
-              <span
-                class="rounded-full px-2.5 py-0.5 text-xs"
-                [class]="empresa.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
-              >
-                {{ empresa.ativo ? 'Ativa' : 'Inativa' }}
-              </span>
-            </a>
-          </li>
-        }
-      </ul>
+      <div class="admin-table-wrap">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3 font-medium">Empresa</th>
+              <th class="px-4 py-3 font-medium">Código</th>
+              <th class="px-4 py-3 font-medium">Status</th>
+              <th class="px-4 py-3 font-medium text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (empresa of recentes(); track empresa.id) {
+              <tr class="transition hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium text-slate-900">{{ empresa.nome }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ empresa.codigo }}</td>
+                <td class="px-4 py-3">
+                  @if (empresa.ativo) {
+                    <span class="admin-badge-ok">
+                      <i class="ph ph-check" aria-hidden="true"></i>
+                      Ativa
+                    </span>
+                  } @else {
+                    <span class="admin-badge-off">Inativa</span>
+                  }
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap items-center justify-end gap-1.5">
+                    <a
+                      [routerLink]="['/admin/empresas', empresa.id]"
+                      [queryParams]="{ aba: 'licencas' }"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                      title="Licenças"
+                    >
+                      <i class="ph ph-certificate text-sm" aria-hidden="true"></i>
+                      Licenças
+                    </a>
+                    <a
+                      [routerLink]="['/admin/empresas', empresa.id]"
+                      [queryParams]="{ aba: 'admins' }"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                      title="Admins"
+                    >
+                      <i class="ph ph-users-three text-sm" aria-hidden="true"></i>
+                      Admins
+                    </a>
+                    <a
+                      [routerLink]="['/admin/empresas', empresa.id]"
+                      class="inline-flex items-center gap-1 rounded-lg bg-navy-800 px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-navy-700"
+                    >
+                      Abrir
+                      <i class="ph ph-caret-right text-sm" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </section>
 </div>

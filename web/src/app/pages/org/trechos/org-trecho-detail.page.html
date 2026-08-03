@@ -1,0 +1,109 @@
+<div class="px-6 py-8 lg:px-10">
+  <a
+    routerLink="/org/trechos"
+    class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-navy-800"
+  >
+    <i class="ph ph-arrow-left" aria-hidden="true"></i>
+    Trechos
+  </a>
+
+  @if (carregando()) {
+    <p class="mt-6 text-sm text-slate-500">Carregando trecho…</p>
+  } @else if (trecho(); as item) {
+    <header class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-[0.16em] text-navy-600">Trecho</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{{ item.codigo }}</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ item.ruaNome }} · {{ item.comprimentoMetros | number: '1.0-0' }} m
+        </p>
+      </div>
+      @if (item.ativo) {
+        <span class="admin-badge-ok">Ativo</span>
+      } @else {
+        <span class="admin-badge-off">Inativo</span>
+      }
+    </header>
+
+    @if (erro(); as mensagem) {
+      <div class="admin-alert-error mb-4">{{ mensagem }}</div>
+    }
+    @if (ok(); as mensagem) {
+      <div class="admin-alert-ok mb-4">{{ mensagem }}</div>
+    }
+
+    <form class="admin-card max-w-2xl space-y-4 p-5" [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700" for="ruaId">Rua</label>
+        <select id="ruaId" formControlName="ruaId" class="admin-input">
+          @for (rua of ruas(); track rua.id) {
+            <option [ngValue]="rua.id">{{ rua.nome }}</option>
+          }
+        </select>
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700" for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" class="admin-input" />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="status">Status</label>
+          <select id="status" formControlName="status" class="admin-input">
+            @for (st of statusOpcoes; track st) {
+              <option [ngValue]="st">{{ st }}</option>
+            }
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-slate-700" for="percentualExecutado">% executado</label>
+          <input
+            id="percentualExecutado"
+            type="number"
+            formControlName="percentualExecutado"
+            min="0"
+            max="100"
+            step="0.1"
+            class="admin-input"
+          />
+        </div>
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700" for="geomWkt">Geometria (WKT)</label>
+        <textarea
+          id="geomWkt"
+          formControlName="geomWkt"
+          rows="4"
+          class="admin-input font-mono text-xs"
+        ></textarea>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" formControlName="emCorrecao" class="rounded border-slate-300 text-navy-800" />
+        Em correção
+      </label>
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          formControlName="liberadoInforme"
+          class="rounded border-slate-300 text-navy-800"
+        />
+        Liberado para informe
+      </label>
+      <label class="flex items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" formControlName="ativo" class="rounded border-slate-300 text-navy-800" />
+        Trecho ativo
+      </label>
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+          Salvar
+        </button>
+        @if (item.ativo) {
+          <button type="button" class="admin-btn-danger" (click)="desativar()">
+            <i class="ph ph-prohibit" aria-hidden="true"></i>
+            Desativar
+          </button>
+        }
+      </div>
+    </form>
+  }
+</div>

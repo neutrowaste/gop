@@ -1,215 +1,272 @@
 <div class="px-6 py-8 lg:px-10">
-  <a routerLink="/admin/empresas" class="text-sm text-slate-400 hover:text-slate-200">← Empresas</a>
+  <a
+    routerLink="/admin/empresas"
+    class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-navy-800"
+  >
+    <i class="ph ph-arrow-left" aria-hidden="true"></i>
+    Empresas
+  </a>
 
   @if (carregando()) {
     <p class="mt-6 text-sm text-slate-500">Carregando cliente…</p>
   } @else if (empresa(); as emp) {
     <header class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.24em] text-emerald-400">{{ emp.codigo }}</p>
-        <h2 class="mt-2 text-2xl font-semibold tracking-tight">{{ emp.nome }}</h2>
-        <p class="mt-1 text-sm text-slate-400">
-          Cadastro do cliente, licenças e teto de ativos
-        </p>
+      <div class="flex items-start gap-4">
+        <span
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-800 text-white"
+        >
+          <i class="ph-bold ph-building-office text-xl" aria-hidden="true"></i>
+        </span>
+        <div>
+          <p class="font-mono text-xs font-medium uppercase tracking-[0.16em] text-navy-600">
+            {{ emp.codigo }}
+          </p>
+          <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{{ emp.nome }}</h2>
+          <p class="mt-1 text-sm text-slate-500">Cadastro do cliente, licenças e administradores</p>
+          @if (teto(); as t) {
+            <p class="mt-2 text-sm text-slate-600">
+              Lutocares (GPS):
+              <span class="font-semibold tabular-nums text-slate-900"
+                >{{ t.ativosEmUso }}/{{ t.tetoAtivos }}</span
+              >
+              em uso
+            </p>
+          }
+        </div>
       </div>
-      <span
-        class="rounded-full px-3 py-1 text-xs"
-        [class]="emp.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
-      >
-        {{ emp.ativo ? 'Ativa' : 'Inativa' }}
-      </span>
+      @if (emp.ativo) {
+        <span class="admin-badge-ok">
+          <i class="ph ph-check" aria-hidden="true"></i>
+          Ativa
+        </span>
+      } @else {
+        <span class="admin-badge-off">Inativa</span>
+      }
     </header>
 
     @if (erro(); as mensagem) {
-      <div class="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-        {{ mensagem }}
+      <div class="admin-alert-error mb-4 flex items-start gap-2">
+        <i class="ph ph-warning-circle mt-0.5 text-base" aria-hidden="true"></i>
+        <span>{{ mensagem }}</span>
       </div>
     }
     @if (ok(); as mensagem) {
-      <div class="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">
-        {{ mensagem }}
+      <div class="admin-alert-ok mb-4 flex items-start gap-2">
+        <i class="ph ph-check-circle mt-0.5 text-base" aria-hidden="true"></i>
+        <span>{{ mensagem }}</span>
       </div>
     }
 
-    <nav class="mb-6 flex flex-wrap gap-1 border-b border-slate-800 pb-px text-sm">
+    <nav class="mb-6 flex flex-wrap gap-1 border-b border-slate-200 text-sm">
       @for (item of [
-        { id: 'dados', label: 'Dados' },
-        { id: 'licencas', label: 'Licenças e teto' },
-        { id: 'admins', label: 'Admins da empresa' },
-        { id: 'modulos', label: 'Módulos' }
+        { id: 'dados', label: 'Dados', icon: 'ph-identification-card' },
+        { id: 'licencas', label: 'Licenças e teto', icon: 'ph-certificate' },
+        { id: 'admins', label: 'Admins da empresa', icon: 'ph-users-three' },
+        { id: 'modulos', label: 'Módulos', icon: 'ph-squares-four' }
       ]; track item.id) {
         <button
           type="button"
-          class="rounded-t-lg px-4 py-2 transition"
+          class="inline-flex items-center gap-1.5 rounded-t-lg px-4 py-2.5 transition"
           [class]="
             aba() === item.id
-              ? 'border-b-2 border-emerald-400 text-emerald-300'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'border-b-2 border-navy-800 font-medium text-navy-800'
+              : 'text-slate-500 hover:text-slate-800'
           "
           (click)="selecionarAba($any(item.id))"
         >
+          <i class="ph {{ item.icon }}" aria-hidden="true"></i>
           {{ item.label }}
         </button>
       }
     </nav>
 
     @if (aba() === 'dados') {
-      <form class="max-w-xl space-y-4" [formGroup]="formEmpresa" (ngSubmit)="salvarEmpresa()">
-        <div class="space-y-2">
-          <label class="text-sm text-slate-300" for="codigo">Código</label>
-          <input
-            id="codigo"
-            formControlName="codigo"
-            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-          />
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm text-slate-300" for="nome">Nome</label>
-          <input
-            id="nome"
-            formControlName="nome"
-            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-          />
-        </div>
-        <label class="flex items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" formControlName="ativo" class="rounded border-slate-600" />
-          Empresa ativa
-        </label>
-        <div class="flex flex-wrap gap-2 pt-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-            [disabled]="salvando()"
-          >
-            Salvar
-          </button>
-          @if (emp.ativo) {
-            <button
-              type="button"
-              class="rounded-lg border border-rose-500/40 px-4 py-2 text-sm text-rose-300"
-              (click)="desativarEmpresa()"
-            >
-              Desativar empresa
+      <div class="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <form class="admin-card max-w-xl space-y-4 p-5" [formGroup]="formEmpresa" (ngSubmit)="salvarEmpresa()">
+          <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <i class="ph ph-pencil-simple text-navy-700" aria-hidden="true"></i>
+            Dados cadastrais
+          </h3>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="codigo">Código</label>
+            <input id="codigo" formControlName="codigo" class="admin-input" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="nome">Nome</label>
+            <input id="nome" formControlName="nome" class="admin-input" />
+          </div>
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" formControlName="ativo" class="rounded border-slate-300 text-navy-800" />
+            Empresa ativa
+          </label>
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+              <i class="ph ph-floppy-disk" aria-hidden="true"></i>
+              Salvar
             </button>
+            @if (emp.ativo) {
+              <button type="button" class="admin-btn-danger" (click)="desativarEmpresa()">
+                <i class="ph ph-prohibit" aria-hidden="true"></i>
+                Desativar empresa
+              </button>
+            }
+          </div>
+        </form>
+
+        <aside class="admin-card h-fit p-5">
+          <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <i class="ph ph-gps-fix text-navy-700" aria-hidden="true"></i>
+            Lutocares (GPS)
+          </h3>
+          @if (teto(); as t) {
+            <p class="mt-3 text-2xl font-semibold tabular-nums text-slate-900">
+              {{ t.ativosEmUso }}
+              <span class="text-base font-normal text-slate-500">/ {{ t.tetoAtivos }}</span>
+            </p>
+            <p class="mt-1 text-xs text-slate-500">em uso / teto da licença vigente</p>
+            <p class="mt-3 text-sm text-slate-600">
+              Saldo:
+              <span class="font-semibold tabular-nums text-navy-800">{{ t.saldoDisponivel }}</span>
+            </p>
+            @if (!t.permiteNovoAtivo) {
+              <p class="mt-3 text-xs font-medium text-amber-800">Cadastro de novos Lutocares bloqueado.</p>
+            }
+          } @else {
+            <p class="mt-3 text-sm text-amber-800">
+              {{ tetoErro() || 'Sem licença vigente.' }}
+            </p>
           }
-        </div>
-      </form>
+        </aside>
+      </div>
     }
 
     @if (aba() === 'licencas') {
-      <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div class="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div class="space-y-4">
           <form
-            class="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4 sm:grid-cols-2"
+            class="admin-card grid gap-3 p-5 sm:grid-cols-2"
             [formGroup]="formLicenca"
             (ngSubmit)="criarLicenca()"
           >
-            <h3 class="sm:col-span-2 text-sm font-medium text-slate-300">Nova licença</h3>
+            <h3 class="sm:col-span-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
+              Nova licença
+            </h3>
             <div class="space-y-1">
-              <label class="text-xs text-slate-500" for="teto">Teto de ativos</label>
+              <label class="text-xs font-medium text-slate-500" for="teto">Teto de Lutocares (GPS)</label>
               <input
                 id="teto"
                 type="number"
                 min="0"
                 formControlName="tetoAtivos"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                class="admin-input"
               />
             </div>
             <div class="space-y-1">
-              <label class="text-xs text-slate-500" for="status">Status</label>
-              <select
-                id="status"
-                formControlName="status"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-              >
+              <label class="text-xs font-medium text-slate-500" for="status">Status</label>
+              <select id="status" formControlName="status" class="admin-input">
                 @for (status of statusOpcoes; track status) {
                   <option [value]="status">{{ status }}</option>
                 }
               </select>
             </div>
             <div class="space-y-1">
-              <label class="text-xs text-slate-500" for="inicio">Início</label>
-              <input
-                id="inicio"
-                type="date"
-                formControlName="vigenciaInicio"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-              />
+              <label class="text-xs font-medium text-slate-500" for="inicio">Início</label>
+              <input id="inicio" type="date" formControlName="vigenciaInicio" class="admin-input" />
             </div>
             <div class="space-y-1">
-              <label class="text-xs text-slate-500" for="fim">Fim (opcional)</label>
-              <input
-                id="fim"
-                type="date"
-                formControlName="vigenciaFim"
-                class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-              />
+              <label class="text-xs font-medium text-slate-500" for="fim">Fim (opcional)</label>
+              <input id="fim" type="date" formControlName="vigenciaFim" class="admin-input" />
             </div>
-            <button
-              type="submit"
-              class="sm:col-span-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-              [disabled]="salvando()"
-            >
+            <button type="submit" class="admin-btn-primary sm:col-span-2" [disabled]="salvando()">
+              <i class="ph ph-certificate" aria-hidden="true"></i>
               Criar licença
             </button>
           </form>
 
           @if (licencas().length === 0) {
-            <p class="text-sm text-slate-500">Nenhuma licença cadastrada.</p>
+            <div class="admin-card border-dashed px-4 py-8 text-center">
+              <i class="ph ph-certificate text-2xl text-slate-300" aria-hidden="true"></i>
+              <p class="mt-2 text-sm text-slate-500">Nenhuma licença cadastrada.</p>
+            </div>
           } @else {
-            <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-              @for (licenca of licencas(); track licenca.id) {
-                <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div>
-                    <p class="text-sm font-medium text-slate-100">
-                      #{{ licenca.id }} · teto {{ licenca.tetoAtivos }}
-                    </p>
-                    <p class="text-xs text-slate-500">
-                      {{ licenca.vigenciaInicio }}
-                      → {{ licenca.vigenciaFim || 'sem fim' }} · {{ licenca.status }}
-                    </p>
-                  </div>
-                  @if (licenca.ativo && licenca.status !== 'ENCERRADA') {
-                    <button
-                      type="button"
-                      class="text-sm text-rose-300 hover:text-rose-200"
-                      (click)="encerrarLicenca(licenca)"
-                    >
-                      Encerrar
-                    </button>
+            <div class="admin-table-wrap">
+              <table class="w-full text-left text-sm">
+                <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">Licença</th>
+                    <th class="px-4 py-3 font-medium">Teto Lutocares</th>
+                    <th class="px-4 py-3 font-medium">Vigência</th>
+                    <th class="px-4 py-3 font-medium">Status</th>
+                    <th class="px-4 py-3 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (licenca of licencas(); track licenca.id) {
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-4 py-3 font-medium text-slate-900">#{{ licenca.id }}</td>
+                      <td class="px-4 py-3 tabular-nums text-slate-700">{{ licenca.tetoAtivos }}</td>
+                      <td class="px-4 py-3 text-slate-500">
+                        {{ licenca.vigenciaInicio }} → {{ licenca.vigenciaFim || 'sem fim' }}
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="admin-badge-info">{{ licenca.status }}</span>
+                      </td>
+                      <td class="px-4 py-3 text-right">
+                        @if (licenca.ativo && licenca.status !== 'ENCERRADA') {
+                          <button
+                            type="button"
+                            class="text-sm font-medium text-rose-600 hover:text-rose-800"
+                            (click)="encerrarLicenca(licenca)"
+                          >
+                            Encerrar
+                          </button>
+                        }
+                      </td>
+                    </tr>
                   }
-                </li>
-              }
-            </ul>
+                </tbody>
+              </table>
+            </div>
           }
         </div>
 
-        <aside class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 h-fit">
-          <h3 class="text-sm font-medium text-slate-300">Teto vigente</h3>
+        <aside class="admin-card h-fit p-5">
+          <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <i class="ph ph-gauge text-navy-700" aria-hidden="true"></i>
+            Teto de Lutocares (GPS)
+          </h3>
           <p class="mt-1 text-xs text-slate-500">
-            Considera apenas licença ATIVA cuja vigência inclui a data de hoje.
+            Consumo = Lutocares ativos cadastrados pela empresa.
           </p>
           @if (teto(); as t) {
             <dl class="mt-4 space-y-3 text-sm">
-              <div class="flex justify-between gap-2">
-                <dt class="text-slate-500">Teto</dt>
-                <dd class="tabular-nums">{{ t.tetoAtivos }}</dd>
+              <div class="flex justify-between gap-2 border-b border-slate-100 pb-2">
+                <dt class="text-slate-500">Teto contratado</dt>
+                <dd class="font-semibold tabular-nums text-slate-900">{{ t.tetoAtivos }}</dd>
               </div>
-              <div class="flex justify-between gap-2">
-                <dt class="text-slate-500">Em uso</dt>
-                <dd class="tabular-nums">{{ t.ativosEmUso }}</dd>
+              <div class="flex justify-between gap-2 border-b border-slate-100 pb-2">
+                <dt class="text-slate-500">Lutocares em uso</dt>
+                <dd class="tabular-nums text-slate-800">{{ t.ativosEmUso }}</dd>
               </div>
-              <div class="flex justify-between gap-2">
+              <div class="flex justify-between gap-2 border-b border-slate-100 pb-2">
                 <dt class="text-slate-500">Saldo</dt>
-                <dd class="tabular-nums text-emerald-300">{{ t.saldoDisponivel }}</dd>
+                <dd class="font-semibold tabular-nums text-navy-800">{{ t.saldoDisponivel }}</dd>
               </div>
-              <div class="flex justify-between gap-2">
-                <dt class="text-slate-500">Novos ativos</dt>
-                <dd>{{ t.permiteNovoAtivo ? 'Permitido' : 'Bloqueado' }}</dd>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-500">Novos cadastros</dt>
+                <dd>
+                  @if (t.permiteNovoAtivo) {
+                    <span class="admin-badge-ok">Permitido</span>
+                  } @else {
+                    <span class="admin-badge-off">Bloqueado</span>
+                  }
+                </dd>
               </div>
             </dl>
           } @else {
-            <p class="mt-3 text-sm text-amber-200/90">
+            <p class="mt-3 flex items-start gap-2 text-sm text-amber-800">
+              <i class="ph ph-warning mt-0.5" aria-hidden="true"></i>
               {{ tetoErro() || 'A empresa não possui licença vigente para a data de hoje.' }}
             </p>
           }
@@ -218,119 +275,151 @@
     }
 
     @if (aba() === 'admins') {
-      <div class="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <form
-          class="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4"
-          [formGroup]="formAdmin"
-          (ngSubmit)="criarAdmin()"
-        >
-          <h3 class="text-sm font-medium text-slate-300">Novo administrador da empresa</h3>
+      <div class="grid gap-6 lg:grid-cols-[360px_1fr]">
+        <form class="admin-card space-y-3 p-5" [formGroup]="formAdmin" (ngSubmit)="criarAdmin()">
+          <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <i class="ph ph-user-plus text-navy-700" aria-hidden="true"></i>
+            Novo administrador
+          </h3>
           <p class="text-xs text-slate-500">
             Esse usuário acessa a área Admin Empresa e gerencia apenas a própria organização.
           </p>
           <div class="space-y-1">
-            <label class="text-xs text-slate-500" for="adminNome">Nome</label>
-            <input
-              id="adminNome"
-              formControlName="nome"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-            />
+            <label class="text-xs font-medium text-slate-500" for="adminNome">Nome</label>
+            <input id="adminNome" formControlName="nome" class="admin-input" />
           </div>
           <div class="space-y-1">
-            <label class="text-xs text-slate-500" for="adminEmail">Email</label>
-            <input
-              id="adminEmail"
-              type="email"
-              formControlName="email"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-            />
+            <label class="text-xs font-medium text-slate-500" for="adminEmail">Email</label>
+            <input id="adminEmail" type="email" formControlName="email" class="admin-input" />
           </div>
           <div class="space-y-1">
-            <label class="text-xs text-slate-500" for="adminSenha">Senha</label>
-            <input
-              id="adminSenha"
-              type="password"
-              formControlName="senha"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-            />
+            <label class="text-xs font-medium text-slate-500" for="adminSenha">Senha</label>
+            <input id="adminSenha" type="password" formControlName="senha" class="admin-input" />
           </div>
-          <button
-            type="submit"
-            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
-            [disabled]="salvando()"
-          >
+          <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+            <i class="ph ph-user-plus" aria-hidden="true"></i>
             Criar admin
           </button>
         </form>
 
-        <div>
-          <h3 class="mb-3 text-sm font-medium text-slate-300">Administradores</h3>
+        <div class="admin-card overflow-hidden">
+          <div class="border-b border-slate-200 px-5 py-4">
+            <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <i class="ph ph-users-three text-navy-700" aria-hidden="true"></i>
+              Administradores
+            </h3>
+          </div>
           @if (admins().length === 0) {
-            <p class="text-sm text-slate-500">Nenhum administrador cadastrado.</p>
+            <div class="px-5 py-10 text-center">
+              <i class="ph ph-users text-2xl text-slate-300" aria-hidden="true"></i>
+              <p class="mt-2 text-sm text-slate-500">Nenhum administrador cadastrado.</p>
+            </div>
           } @else {
-            <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-              @for (admin of admins(); track admin.id) {
-                <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div>
-                    <p class="text-sm font-medium text-slate-100">{{ admin.nome }}</p>
-                    <p class="text-xs text-slate-500">{{ admin.email }}</p>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <span
-                      class="rounded-full px-2.5 py-0.5 text-xs"
-                      [class]="admin.ativo ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'"
-                    >
-                      {{ admin.ativo ? 'Ativo' : 'Inativo' }}
-                    </span>
-                    @if (admin.ativo) {
-                      <button
-                        type="button"
-                        class="text-sm text-rose-300 hover:text-rose-200"
-                        (click)="desativarAdmin(admin)"
-                      >
-                        Desativar
-                      </button>
-                    }
-                  </div>
-                </li>
-              }
-            </ul>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th class="px-5 py-3 font-medium">Nome</th>
+                    <th class="px-5 py-3 font-medium">Email</th>
+                    <th class="px-5 py-3 font-medium">Status</th>
+                    <th class="px-5 py-3 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (admin of admins(); track admin.id) {
+                    <tr class="hover:bg-slate-50">
+                      <td class="px-5 py-3">
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-50 text-navy-700"
+                          >
+                            <i class="ph ph-user" aria-hidden="true"></i>
+                          </span>
+                          <span class="font-medium text-slate-900">{{ admin.nome }}</span>
+                        </div>
+                      </td>
+                      <td class="px-5 py-3 text-slate-500">{{ admin.email }}</td>
+                      <td class="px-5 py-3">
+                        @if (admin.ativo) {
+                          <span class="admin-badge-ok">Ativo</span>
+                        } @else {
+                          <span class="admin-badge-off">Inativo</span>
+                        }
+                      </td>
+                      <td class="px-5 py-3 text-right">
+                        @if (admin.ativo) {
+                          <button
+                            type="button"
+                            class="text-sm font-medium text-rose-600 hover:text-rose-800"
+                            (click)="desativarAdmin(admin)"
+                          >
+                            Desativar
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           }
         </div>
       </div>
     }
 
     @if (aba() === 'modulos') {
-      <div>
-        <h3 class="text-sm font-medium text-slate-300">Módulos do tenant</h3>
-        <p class="mt-1 mb-4 text-xs text-slate-500">
-          Habilite os módulos contratados. O admin da empresa só poderá liberá-los aos usuários da organização.
-        </p>
+      <div class="admin-card overflow-hidden">
+        <div class="border-b border-slate-200 px-5 py-4">
+          <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <i class="ph ph-squares-four text-navy-700" aria-hidden="true"></i>
+            Módulos do tenant
+          </h3>
+          <p class="mt-1 text-xs text-slate-500">
+            Habilite os módulos contratados. O admin da empresa só poderá liberá-los aos usuários da
+            organização.
+          </p>
+        </div>
         @if (modulos().length === 0) {
-          <p class="text-sm text-slate-500">Catálogo de módulos indisponível.</p>
+          <p class="px-5 py-8 text-sm text-slate-500">Catálogo de módulos indisponível.</p>
         } @else {
-          <ul class="divide-y divide-slate-800 overflow-hidden rounded-xl border border-slate-800">
-            @for (modulo of modulos(); track modulo.moduloId) {
-              <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div>
-                  <p class="text-sm font-medium text-slate-100">{{ modulo.nome }}</p>
-                  <p class="text-xs text-slate-500">{{ modulo.codigo }} · {{ modulo.categoria }}</p>
-                </div>
-                <button
-                  type="button"
-                  class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
-                  [class]="
-                    modulo.habilitado
-                      ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
-                      : 'border border-slate-700 text-slate-300 hover:border-slate-500'
-                  "
-                  (click)="alternarModulo(modulo)"
-                >
-                  {{ modulo.habilitado ? 'Habilitado' : 'Habilitar' }}
-                </button>
-              </li>
-            }
-          </ul>
+          <table class="w-full text-left text-sm">
+            <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-5 py-3 font-medium">Módulo</th>
+                <th class="px-5 py-3 font-medium">Categoria</th>
+                <th class="px-5 py-3 font-medium text-right">Situação</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (modulo of modulos(); track modulo.moduloId) {
+                <tr class="hover:bg-slate-50">
+                  <td class="px-5 py-3">
+                    <p class="font-medium text-slate-900">{{ modulo.nome }}</p>
+                    <p class="text-xs text-slate-500">{{ modulo.codigo }}</p>
+                  </td>
+                  <td class="px-5 py-3 text-slate-500">{{ modulo.categoria }}</td>
+                  <td class="px-5 py-3 text-right">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                      [class]="
+                        modulo.habilitado
+                          ? 'bg-navy-800 text-white hover:bg-navy-700'
+                          : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                      "
+                      (click)="alternarModulo(modulo)"
+                    >
+                      <i
+                        class="ph {{ modulo.habilitado ? 'ph-check' : 'ph-plus' }}"
+                        aria-hidden="true"
+                      ></i>
+                      {{ modulo.habilitado ? 'Habilitado' : 'Habilitar' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         }
       </div>
     }

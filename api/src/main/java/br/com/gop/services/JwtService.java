@@ -4,6 +4,8 @@ import br.com.gop.security.UsuarioPrincipal;
 import br.com.gop.security.UsuarioTokenPrincipal;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import java.util.Map;
 @Service
 public class JwtService {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(JwtService.class);
 	private static final Base64.Encoder BASE64_URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
 	private static final Base64.Decoder BASE64_URL_DECODER = Base64.getUrlDecoder();
 	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
@@ -57,11 +60,21 @@ public class JwtService {
 		if (secretBytes.length < 32) {
 			throw new IllegalArgumentException("security.jwt.secret deve ter ao menos 32 bytes");
 		}
+		if (accessTokenTtl == null || accessTokenTtl.isNegative() || accessTokenTtl.isZero()) {
+			throw new IllegalArgumentException("security.jwt.access-token-ttl deve ser positivo");
+		}
+		if (accessTokenTtl.compareTo(Duration.ofHours(6)) < 0) {
+			LOGGER.warn(
+				"JWT access-token-ttl={} está abaixo de 6h; admin empresa pode perder a sessão cedo demais",
+				accessTokenTtl
+			);
+		}
 		this.objectMapper = objectMapper;
 		this.clock = clock;
 		this.issuer = issuer;
 		this.accessTokenTtl = accessTokenTtl;
 		this.secret = secretBytes.clone();
+		LOGGER.info("JWT access-token-ttl configurado para {}", accessTokenTtl);
 	}
 
 	public TokenEmitido emitir(UsuarioPrincipal principal) {

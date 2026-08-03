@@ -29,4 +29,10 @@ public interface UsuarioModuloRepository extends JpaRepository<UsuarioModulo, Lo
 	List<UsuarioModulo> findByUsuarioIdWithModulo(@Param("usuarioId") Long usuarioId);
 
 	Optional<UsuarioModulo> findByUsuarioIdAndModuloId(Long usuarioId, Long moduloId);
+
+	/** Usado para checar acesso de funcionário a recursos gated por módulo (ex.: mapa operacional). */
+	boolean existsByUsuarioIdAndLiberadoTrueAndModulo_AtivoTrueAndModulo_CodigoIgnoreCase(
+		Long usuarioId,
+		String codigoModulo
+	);
 }

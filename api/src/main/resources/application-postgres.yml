@@ -9,15 +9,19 @@ spring:
       ddl-auto: update
     open-in-view: false
     show-sql: false
-    defer-datasource-initialization: true
+    # false: schema-postgis.sql roda ANTES do Hibernate criar colunas geometry
+    defer-datasource-initialization: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
-        dialect: org.hibernate.dialect.PostgreSQLDialect
   sql:
     init:
       mode: always
+      # Sem PostGIS instalado no servidor, CREATE EXTENSION falha; não derruba o boot.
+      # Após instalar PostGIS (Stack Builder) e reiniciar o PG, reinicie a API.
+      continue-on-error: true
       schema-locations: classpath:schema-postgis.sql
 
 gop:
