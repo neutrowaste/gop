@@ -6,36 +6,126 @@
         Cadastros
       </p>
       <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Trechos</h2>
-      <p class="mt-1 text-sm text-slate-500">Segmentos de via com geometria e status operacional</p>
+      <p class="mt-1 text-sm text-slate-500">
+        Segmentos do setor com geometria e status operacional. O nome da via vem do shapefile ou do
+        cadastro manual.
+      </p>
     </div>
-    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
-      <i class="ph ph-plus" aria-hidden="true"></i>
-      Novo trecho
-    </button>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="admin-btn-secondary" (click)="abrirImportacao()">
+        <i class="ph ph-file-zip" aria-hidden="true"></i>
+        Importar shapefile
+      </button>
+      <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+        <i class="ph ph-plus" aria-hidden="true"></i>
+        Novo trecho
+      </button>
+    </div>
   </header>
 
   @if (erro(); as mensagem) {
     <div class="admin-alert-error mb-4">{{ mensagem }}</div>
   }
+  @if (ok(); as mensagem) {
+    <div class="admin-alert-ok mb-4">{{ mensagem }}</div>
+  }
+
+  @if (mostrarImportacao()) {
+    <form class="admin-card mb-6 grid max-w-2xl gap-3 p-5" [formGroup]="formImportacao" (ngSubmit)="importarShapefile()">
+      <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <i class="ph ph-file-zip text-navy-700" aria-hidden="true"></i>
+        Importar shapefile
+      </h3>
+      <p class="text-sm text-slate-500">
+        Envie um <span class="font-medium text-slate-700">.zip</span> com
+        <code class="rounded bg-slate-100 px-1 text-xs">.shp</code>,
+        <code class="rounded bg-slate-100 px-1 text-xs">.shx</code>,
+        <code class="rounded bg-slate-100 px-1 text-xs">.dbf</code>
+        e, se houver,
+        <code class="rounded bg-slate-100 px-1 text-xs">.prj</code>.
+        O nome da via vem do atributo RUA (ou o campo informado). As linhas entram no setor escolhido.
+      </p>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="setorImportacao">Setor</label>
+        <select id="setorImportacao" formControlName="setorId" class="admin-input">
+          <option [ngValue]="0" disabled>Selecione</option>
+          @for (setor of setores(); track setor.id) {
+            <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
+          }
+        </select>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <label class="text-xs font-medium text-slate-500" for="atributoRua">Atributo da via</label>
+          <input id="atributoRua" formControlName="atributoRua" class="admin-input" placeholder="RUA" />
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-medium text-slate-500" for="atributoCodigo">Atributo do código (opcional)</label>
+          <input id="atributoCodigo" formControlName="atributoCodigo" class="admin-input" placeholder="CODIGO" />
+        </div>
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="arquivoShp">Arquivo ZIP</label>
+        <input
+          id="arquivoShp"
+          type="file"
+          accept=".zip,application/zip"
+          class="admin-input"
+          (change)="onArquivoSelecionado($event)"
+        />
+        @if (arquivoShapefile(); as arquivo) {
+          <p class="text-xs text-slate-500">{{ arquivo.name }}</p>
+        }
+      </div>
+      @if (resultadoImportacao(); as resultado) {
+        <div class="admin-alert-ok">
+          {{ resultado.criados }} trecho(s) criado(s) · {{ resultado.ignorados }} ignorado(s) ·
+          {{ resultado.lidos }} lido(s) no arquivo.
+        </div>
+      }
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
+          <i class="ph ph-upload-simple" aria-hidden="true"></i>
+          Importar
+        </button>
+        <button type="button" class="admin-btn-secondary" (click)="fecharImportacao()">Cancelar</button>
+      </div>
+    </form>
+  }
 
   @if (mostrarForm()) {
-    <form class="admin-card mb-6 grid max-w-2xl gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
+    <div class="mb-6 grid items-stretch gap-4 xl:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]">
+    <form class="admin-card grid gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
       <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
         <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
         Novo trecho
       </h3>
+      <p class="text-sm text-slate-500">
+        Desenhe uma ou mais linhas no mapa. Cada linha vira um trecho, como no shapefile.
+      </p>
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-500" for="ruaId">Rua</label>
-        <select id="ruaId" formControlName="ruaId" class="admin-input">
+        <label class="text-xs font-medium text-slate-500" for="setorId">Setor</label>
+        <select id="setorId" formControlName="setorId" class="admin-input">
           <option [ngValue]="0" disabled>Selecione</option>
-          @for (rua of ruas(); track rua.id) {
-            <option [ngValue]="rua.id">{{ rua.nome }}</option>
+          @for (setor of setores(); track setor.id) {
+            <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
           }
         </select>
       </div>
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-500" for="codigo">Código</label>
-        <input id="codigo" formControlName="codigo" class="admin-input" />
+        <label class="text-xs font-medium text-slate-500" for="codigo">Código (opcional)</label>
+        <input id="codigo" formControlName="codigo" class="admin-input" placeholder="Ex.: TR-001" />
+        <p class="text-xs text-slate-400">
+          Vazio gera pelo setor. Com várias linhas, vira prefixo (COD, COD-2, COD-3).
+        </p>
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="ruaNome">Nome da via</label>
+        <input
+          id="ruaNome"
+          formControlName="ruaNome"
+          class="admin-input"
+        />
       </div>
       <div class="space-y-1">
         <label class="text-xs font-medium text-slate-500" for="status">Status</label>
@@ -45,15 +135,13 @@
           }
         </select>
       </div>
-      <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-500" for="geomWkt">Geometria (WKT LineString)</label>
-        <textarea
-          id="geomWkt"
-          formControlName="geomWkt"
-          rows="3"
-          class="admin-input font-mono text-xs"
-        ></textarea>
-      </div>
+      @if (linhasWkt().length > 0) {
+        <p class="text-xs font-medium text-navy-700">
+          {{ linhasWkt().length === 1 ? '1 trecho confirmado no mapa' : linhasWkt().length + ' trechos confirmados no mapa' }}
+        </p>
+      } @else {
+        <p class="text-xs text-slate-400">Confirme as linhas no mapa antes de criar.</p>
+      }
       <div class="flex flex-wrap gap-2 pt-1">
         <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
           <i class="ph ph-check" aria-hidden="true"></i>
@@ -62,6 +150,12 @@
         <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
       </div>
     </form>
+    <app-editor-linhas-trecho
+      [geomWkts]="linhasWkt()"
+      (confirmado)="onLinhasConfirmadas($event)"
+      (limpo)="onLinhasLimpas()"
+    />
+    </div>
   }
 
   @if (carregando()) {
@@ -77,7 +171,8 @@
         <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 font-medium">Código</th>
-            <th class="px-4 py-3 font-medium">Rua</th>
+            <th class="px-4 py-3 font-medium">Setor</th>
+            <th class="px-4 py-3 font-medium">Via</th>
             <th class="px-4 py-3 font-medium">Status op.</th>
             <th class="px-4 py-3 font-medium">Execução</th>
             <th class="px-4 py-3 font-medium">Cadastro</th>
@@ -88,7 +183,10 @@
           @for (trecho of trechos(); track trecho.id) {
             <tr class="hover:bg-slate-50">
               <td class="px-4 py-3 font-medium text-slate-900">{{ trecho.codigo }}</td>
-              <td class="px-4 py-3 text-slate-500">{{ trecho.ruaNome }}</td>
+              <td class="px-4 py-3 text-slate-500">
+                {{ trecho.setorCodigo ? trecho.setorCodigo + ' · ' : '' }}{{ trecho.setorNome }}
+              </td>
+              <td class="px-4 py-3 text-slate-500">{{ trecho.ruaNome || '—' }}</td>
               <td class="px-4 py-3">
                 <span class="admin-badge-info">{{ trecho.status }}</span>
               </td>

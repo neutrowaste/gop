@@ -8,7 +8,7 @@ public record OcorrenciaResponse(
 	Long escalaId,
 	LocalDate escalaData,
 	String setorNome,
-	String equipeNome,
+	String colaboradoresNomes,
 	Long equipamentoId,
 	String equipamentoCodigo,
 	Long trechoExecucaoId,

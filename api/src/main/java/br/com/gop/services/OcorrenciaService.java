@@ -64,12 +64,11 @@ public class OcorrenciaService {
 		Long empresaId,
 		LocalDate data,
 		Long setorId,
-		Long equipeId,
 		StatusOcorrencia status,
 		TipoOcorrencia tipo
 	) {
 		empresaService.buscarEntidade(empresaId);
-		Specification<Ocorrencia> filtro = comFiltros(empresaId, data, setorId, equipeId, status, tipo);
+		Specification<Ocorrencia> filtro = comFiltros(empresaId, data, setorId, status, tipo);
 		return ocorrenciaRepository.findAll(filtro, ORDENACAO_PADRAO)
 			.stream()
 			.map(this::paraResponse)
@@ -80,7 +79,6 @@ public class OcorrenciaService {
 		Long empresaId,
 		LocalDate data,
 		Long setorId,
-		Long equipeId,
 		StatusOcorrencia status,
 		TipoOcorrencia tipo
 	) {
@@ -93,9 +91,6 @@ public class OcorrenciaService {
 			}
 			if (setorId != null) {
 				predicados.add(cb.equal(escala.get("setor").get("id"), setorId));
-			}
-			if (equipeId != null) {
-				predicados.add(cb.equal(escala.get("equipe").get("id"), equipeId));
 			}
 			if (status != null) {
 				predicados.add(cb.equal(root.get("status"), status));
@@ -154,7 +149,7 @@ public class OcorrenciaService {
 	 * para o mesmo trecho do plano.
 	 */
 	@Transactional
-	public void criarOrdemViolada(Empresa empresa, Escala escala, TrechoExecucao trechoExecucao) {
+	public void criarOrdemViolada(Empresa empresa, Escala escala, Equipamento equipamento, TrechoExecucao trechoExecucao) {
 		boolean jaExiste = ocorrenciaRepository.existsByTrechoExecucaoIdAndTipoAndStatus(
 			trechoExecucao.getId(),
 			TipoOcorrencia.ORDEM_PLANO_VIOLADA,
@@ -166,7 +161,7 @@ public class OcorrenciaService {
 		Ocorrencia ocorrencia = new Ocorrencia();
 		ocorrencia.setEmpresa(empresa);
 		ocorrencia.setEscala(escala);
-		ocorrencia.setEquipamento(escala.getEquipamento());
+		ocorrencia.setEquipamento(equipamento);
 		ocorrencia.setTrechoExecucao(trechoExecucao);
 		ocorrencia.setTipo(TipoOcorrencia.ORDEM_PLANO_VIOLADA);
 		ocorrencia.setDescricao(
@@ -260,7 +255,7 @@ public class OcorrenciaService {
 			escala.getId(),
 			escala.getData(),
 			escala.getSetor().getNome(),
-			escala.getEquipe().getNome(),
+			escala.nomesColaboradores(),
 			ocorrencia.getEquipamento().getId(),
 			ocorrencia.getEquipamento().getCodigo(),
 			trechoExecucao != null ? trechoExecucao.getId() : null,

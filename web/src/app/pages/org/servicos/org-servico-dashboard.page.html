@@ -1,0 +1,351 @@
+<div class="flex h-full flex-col gap-3 p-3 lg:overflow-hidden">
+  <header class="flex shrink-0 flex-wrap items-center justify-between gap-3">
+    <div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy-600">
+        {{ codigo() }}
+      </p>
+      <h2 class="text-xl font-semibold tracking-tight text-slate-900">Dashboard · {{ nome() }}</h2>
+      <p class="mt-0.5 text-xs text-slate-500">
+        Escalas do dia, trechos do plano e posição dos ativos — no mesmo recorte da operação.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="flex items-center gap-2 text-sm text-slate-600">
+        Data
+        <input
+          type="date"
+          class="admin-input py-1.5"
+          #dataInput
+          [value]="dataSelecionada()"
+          (change)="onDataChange(dataInput.value)"
+        />
+      </label>
+      <button type="button" class="admin-btn-secondary text-sm" (click)="voltarParaHoje()">
+        Hoje
+      </button>
+      @if (ultimaAtualizacaoEm(); as ultima) {
+        <p class="text-xs text-slate-400">Atualizado às {{ ultima | date: 'HH:mm:ss' }}</p>
+      }
+    </div>
+  </header>
+
+  @if (erro(); as mensagem) {
+    <div class="admin-alert-error shrink-0">{{ mensagem }}</div>
+  }
+
+  @if (carregando() && !dados()) {
+    <p class="text-sm text-slate-500">Carregando dashboard…</p>
+  } @else {
+    <div class="grid shrink-0 grid-cols-12 gap-3">
+      <div class="col-span-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-9 lg:grid-cols-5">
+        <button
+          type="button"
+          class="admin-card px-3 py-3 text-left transition hover:border-navy-300"
+          [class.ring-2]="filtroKpi() === 'all'"
+          [class.ring-navy-600/25]="filtroKpi() === 'all'"
+          (click)="selecionarFiltro('all')"
+        >
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Trechos previstos</p>
+          <p class="mt-1 text-2xl font-semibold tabular-nums text-navy-800">{{ resumo().previstos }}</p>
+        </button>
+        <button
+          type="button"
+          class="admin-card px-3 py-3 text-left transition hover:border-emerald-300"
+          [class.ring-2]="filtroKpi() === 'EXECUTADO'"
+          [class.ring-emerald-500/30]="filtroKpi() === 'EXECUTADO'"
+          (click)="selecionarFiltro('EXECUTADO')"
+        >
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Executados</p>
+          <div class="mt-1 flex items-end gap-1.5">
+            <p class="text-2xl font-semibold tabular-nums text-emerald-600">{{ resumo().executados }}</p>
+            <p class="mb-0.5 text-xs font-medium text-emerald-600">
+              {{ pct(resumo().executados, resumo().previstos) }}%
+            </p>
+          </div>
+        </button>
+        <button
+          type="button"
+          class="admin-card px-3 py-3 text-left transition hover:border-amber-300"
+          [class.ring-2]="filtroKpi() === 'SUSPEITO'"
+          [class.ring-amber-500/30]="filtroKpi() === 'SUSPEITO'"
+          (click)="selecionarFiltro('SUSPEITO')"
+        >
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Suspeitos</p>
+          <div class="mt-1 flex items-end gap-1.5">
+            <p class="text-2xl font-semibold tabular-nums text-amber-600">{{ resumo().suspeitos }}</p>
+            <p class="mb-0.5 text-xs font-medium text-amber-600">
+              {{ pct(resumo().suspeitos, resumo().previstos) }}%
+            </p>
+          </div>
+        </button>
+        <button
+          type="button"
+          class="admin-card px-3 py-3 text-left transition hover:border-rose-300"
+          [class.ring-2]="filtroKpi() === 'PENDENTE'"
+          [class.ring-rose-500/30]="filtroKpi() === 'PENDENTE'"
+          (click)="selecionarFiltro('PENDENTE')"
+        >
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pendentes</p>
+          <div class="mt-1 flex items-end gap-1.5">
+            <p class="text-2xl font-semibold tabular-nums text-rose-600">{{ resumo().pendentes }}</p>
+            <p class="mb-0.5 text-xs font-medium text-rose-600">
+              {{ pct(resumo().pendentes, resumo().previstos) }}%
+            </p>
+          </div>
+        </button>
+        <button
+          type="button"
+          class="admin-card px-3 py-3 text-left transition hover:border-violet-300"
+          [class.ring-2]="filtroKpi() === 'conformidade'"
+          [class.ring-violet-500/30]="filtroKpi() === 'conformidade'"
+          (click)="selecionarFiltro('conformidade')"
+        >
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Conformidade</p>
+          <div class="mt-1 flex items-center gap-3">
+            <p class="text-2xl font-semibold tabular-nums text-violet-700">{{ resumo().conformidade }}%</p>
+            <div class="relative ml-auto flex h-12 w-12 items-center justify-center">
+              <svg width="48" height="48" class="-rotate-90">
+                <circle cx="24" cy="24" r="19" fill="none" stroke="#e2e8f0" stroke-width="5" />
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="19"
+                  fill="none"
+                  stroke="#7c3aed"
+                  stroke-width="5"
+                  stroke-linecap="round"
+                  [attr.stroke-dasharray]="ringCirc"
+                  [attr.stroke-dashoffset]="ringOffset(resumo().conformidade)"
+                />
+              </svg>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <article class="admin-card col-span-12 flex items-center gap-3 px-4 py-3 lg:col-span-3">
+        <span
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ risco().fundo }}"
+        >
+          <i class="ph ph-warning {{ risco().classe }} text-lg" aria-hidden="true"></i>
+        </span>
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Risco de glosa</p>
+          <p class="text-xl font-bold {{ risco().classe }}">{{ risco().label }}</p>
+          <p class="text-xs text-slate-500">{{ resumo().pendentes }} trechos pendentes</p>
+        </div>
+      </article>
+    </div>
+
+    <div
+      class="grid grid-cols-12 gap-3 max-lg:auto-rows-[420px] lg:min-h-0 lg:flex-[1.35] lg:[grid-template-rows:minmax(0,1fr)]"
+    >
+      <section class="admin-card col-span-12 flex min-h-0 flex-col overflow-hidden lg:col-span-3">
+        <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+          <h3 class="text-sm font-semibold text-slate-800">
+            Escalas ({{ escalasPainel().length }})
+          </h3>
+          <a routerLink="/org/escalas" class="text-[11px] font-medium text-navy-700 hover:text-navy-900">
+            Ver todas
+          </a>
+        </div>
+        <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+          @if (escalasPainel().length === 0) {
+            <p class="py-8 text-center text-xs text-slate-400">Nenhuma escala nesta data.</p>
+          }
+          @for (item of escalasPainel(); track item.escalaId) {
+            @let estado = estadoEscala(item);
+            <a
+              [routerLink]="['/org/escalas', item.escalaId]"
+              class="block rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 transition hover:border-navy-300 hover:bg-white"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="truncate text-[13px] font-semibold text-slate-800">{{ item.nome }}</span>
+                <span class="shrink-0 text-xs font-bold text-slate-500">{{ item.percentual }}%</span>
+              </div>
+              <p class="mt-0.5 truncate text-[11px] text-slate-500">
+                {{ item.setorNome }} · {{ item.turnoLabel }}
+              </p>
+              <div class="mt-1 flex items-center justify-between gap-2">
+                <span class="flex items-center gap-1 text-[11px] font-medium {{ estado.classe }}">
+                  @if (item.situacaoSinal; as sinal) {
+                    <span
+                      class="h-1.5 w-1.5 rounded-full"
+                      [style.background-color]="situacaoCores[sinal]"
+                    ></span>
+                  }
+                  {{ estado.label }}
+                </span>
+                @if (item.total > 0) {
+                  <span class="text-[11px] text-slate-400">{{ item.executados }}/{{ item.total }} trechos</span>
+                }
+              </div>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  class="h-full rounded-full transition-all {{ corBarra(item.percentual) }}"
+                  [style.width.%]="item.percentual"
+                ></div>
+              </div>
+            </a>
+          }
+        </div>
+      </section>
+
+      <section class="col-span-12 min-h-0 lg:col-span-6">
+        <app-mapa-operacional [dados]="dadosMapa()" [compacto]="true" />
+      </section>
+
+      <div class="col-span-12 flex min-h-0 flex-col gap-3 lg:col-span-3">
+        <section class="admin-card flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+            <h3 class="text-sm font-semibold text-slate-800">
+              Ocorrências ({{ ocorrenciasPainel().length }})
+            </h3>
+            <a
+              routerLink="/org/ocorrencias"
+              class="text-[11px] font-medium text-navy-700 hover:text-navy-900"
+            >
+              Ver todas
+            </a>
+          </div>
+          <div class="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+            @if (ocorrenciasPainel().length === 0) {
+              <p class="py-8 text-center text-xs text-slate-400">Nenhuma ocorrência aberta.</p>
+            }
+            @for (item of ocorrenciasPainel(); track item.id) {
+              <a
+                [routerLink]="['/org/ocorrencias', item.id]"
+                class="block border-l-2 px-3 py-2 transition hover:bg-slate-50 {{ barraOcorrencia(item.tipo) }}"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <span class="truncate text-xs font-semibold {{ corOcorrencia(item.tipo) }}">
+                    {{ tipoOcorrenciaLabels[item.tipo] }}
+                  </span>
+                  <span class="shrink-0 text-[10px] text-slate-400">
+                    {{ item.detectadaEm | date: 'HH:mm' }}
+                  </span>
+                </div>
+                <p class="mt-0.5 truncate text-[11px] text-slate-500">{{ item.descricao }}</p>
+                <p class="mt-0.5 truncate text-[10px] text-slate-400">
+                  {{ item.colaboradoresNomes }} · {{ item.setorNome }}
+                </p>
+              </a>
+            }
+          </div>
+        </section>
+
+        <section class="admin-card flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div class="border-b border-slate-200 px-3 py-2">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ativos GPS</h3>
+            <p class="text-[10px] text-slate-400">
+              {{ ativosDoModulo().length }} na escala · {{ ativosOnline() }} online
+            </p>
+          </div>
+          <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+            @if (ativosDoModulo().length === 0) {
+              <li class="py-6 text-center text-xs text-slate-400">Nenhum ativo com posição nesta data.</li>
+            }
+            @for (ativo of ativosDoModulo(); track ativo.equipamentoId) {
+              <li class="flex items-center gap-2 rounded-lg px-2 py-1.5">
+                <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  [style.background-color]="situacaoCores[ativo.situacaoSinal]"
+                ></span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-xs font-medium text-slate-800">
+                    {{ ativo.colaboradoresNomes || ativo.equipamentoCodigo }}
+                  </p>
+                  <p class="truncate text-[10px] text-slate-400">
+                    {{ ativo.equipamentoCodigo }} · {{ situacaoLabels[ativo.situacaoSinal] }}
+                  </p>
+                </div>
+                <span class="shrink-0 text-[11px] tabular-nums text-slate-500">
+                  {{ rotuloVelocidade(ativo.velocidadeKmh) }}
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <div
+      class="grid grid-cols-12 gap-3 max-lg:auto-rows-[280px] lg:min-h-0 lg:flex-1 lg:[grid-template-rows:minmax(0,1fr)]"
+    >
+      <section class="admin-card col-span-12 flex min-h-0 flex-col overflow-hidden lg:col-span-8">
+        <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+          <h3 class="text-sm font-semibold text-slate-800">
+            Trechos pendentes ({{ trechosPendentes().length }})
+          </h3>
+        </div>
+        <div class="min-h-0 flex-1 overflow-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="sticky top-0 bg-white text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-3 py-2">Rua / trecho</th>
+                <th class="px-2 py-2">Equipe</th>
+                <th class="px-2 py-2">Setor</th>
+                <th class="px-2 py-2">Motivo</th>
+                <th class="px-2 py-2 text-right">Execução</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (trechosPendentes().length === 0) {
+                <tr>
+                  <td colspan="5" class="px-3 py-8 text-center text-slate-400">
+                    Nenhuma pendência. Operação conforme.
+                  </td>
+                </tr>
+              }
+              @for (trecho of trechosPendentes(); track trecho.trechoExecucaoId) {
+                <tr class="border-t border-slate-100 hover:bg-slate-50">
+                  <td class="px-3 py-2 font-medium text-slate-800">
+                    {{ trecho.ruaNome || trecho.trechoCodigo }}
+                    @if (trecho.ruaNome) {
+                      <span class="ml-1 font-normal text-slate-400">({{ trecho.trechoCodigo }})</span>
+                    }
+                  </td>
+                  <td class="px-2 py-2 text-slate-500">{{ trecho.colaboradoresNomes || '—' }}</td>
+                  <td class="px-2 py-2 text-slate-500">{{ trecho.setorNome }}</td>
+                  <td class="px-2 py-2 text-slate-500">{{ motivoTrecho(trecho) }}</td>
+                  <td class="px-2 py-2 text-right tabular-nums text-slate-600">
+                  {{ trecho.percentualExecutado | number: '1.0-0' }}%
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card col-span-12 p-3 lg:col-span-4">
+        <h3 class="mb-3 text-sm font-semibold text-slate-800">Resumo da operação</h3>
+        <div class="flex items-center gap-3">
+          <div class="relative h-16 w-16 shrink-0">
+            <div class="h-16 w-16 rounded-full" [style.background]="donutCss()"></div>
+            <div class="absolute inset-[11px] rounded-full bg-white"></div>
+          </div>
+          <div class="min-w-0 flex-1 space-y-1">
+            @for (item of fatiasLegenda(); track item.status) {
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="flex items-center gap-1.5 text-slate-500">
+                  <span
+                    class="h-2.5 w-2.5 rounded-sm"
+                    [style.background-color]="statusCores[item.status]"
+                  ></span>
+                  {{ statusLabels[item.status] }}
+                </span>
+                <span class="font-semibold text-slate-800">
+                  {{ item.valor }}
+                  <span class="font-normal text-slate-400">
+                    ({{ pct(item.valor, resumo().previstos) }}%)
+                  </span>
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    </div>
+  }
+</div>

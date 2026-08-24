@@ -10,7 +10,7 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Mão de obra (paridade Gari do legado); nomenclatura genérica no núcleo. */
+/** Mão de obra operacional; cada colaborador está designado a um Lutocar (GPS). */
 @Getter
 @Setter
 @Entity
@@ -24,8 +24,8 @@ public class Colaborador extends BaseEntity {
 	private Empresa empresa;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "equipe_id", nullable = false)
-	private Equipe equipe;
+	@JoinColumn(name = "equipamento_id", nullable = false)
+	private Equipamento equipamento;
 
 	@Column(nullable = false, length = 200)
 	private String nome;

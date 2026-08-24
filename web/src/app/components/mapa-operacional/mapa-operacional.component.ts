@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { NgClass } from '@angular/common';
 import type { FeatureCollection, Geometry } from 'geojson';
 import maplibregl, {
   GeoJSONSource,
@@ -15,7 +16,6 @@ import maplibregl, {
   Map as MapLibreMap,
   Popup,
 } from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 
 import {
   MapaAtivo,
@@ -41,10 +41,15 @@ const CAMADA_ATIVOS = 'gop-ativos-ponto';
 @Component({
   selector: 'app-mapa-operacional',
   standalone: true,
+  imports: [NgClass],
   templateUrl: './mapa-operacional.component.html',
+  host: {
+    class: 'block h-full min-h-0 w-full',
+  },
 })
 export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() dados: MapaOperacional | null = null;
+  @Input() compacto = false;
 
   @ViewChild('mapaContainer', { static: true }) private mapaContainer!: ElementRef<HTMLDivElement>;
 
@@ -56,28 +61,42 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
   private mapa: MapLibreMap | null = null;
   private mapaPronto = false;
   private popup: Popup | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   ngAfterViewInit(): void {
+    const container = this.mapaContainer.nativeElement;
     this.mapa = new maplibregl.Map({
-      container: this.mapaContainer.nativeElement,
+      container,
       style: {
         version: 8,
         sources: {
-          osm: {
+          // OSM tile.openstreetmap.org bloqueia uso em apps (x-blocked).
+          // Carto CDN redistribui tiles OSM de forma adequada para demos/dev.
+          basemap: {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: [
+              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+            ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
+            attribution: '© OpenStreetMap contributors © CARTO',
           },
         },
-        layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+        layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
       },
       center: [-46.63, -23.55],
       zoom: 12,
     });
     this.mapa.addControl(new maplibregl.NavigationControl(), 'top-right');
 
+    this.resizeObserver = new ResizeObserver(() => {
+      this.mapa?.resize();
+    });
+    this.resizeObserver.observe(container);
+
     this.mapa.on('load', () => {
+      this.mapa!.resize();
       this.mapa!.addSource(FONTE_TRECHOS, {
         type: 'geojson',
         data: paraFeatureCollectionTrechos([]),
@@ -146,7 +165,7 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
           .setLngLat(evento.lngLat)
           .setHTML(
             `<div style="font-size:12px;line-height:1.4">
-              <strong>${propriedades['equipeNome']}</strong> · ${propriedades['equipamentoCodigo']}<br/>
+              <strong>${propriedades['colaboradoresNomes'] || propriedades['equipamentoCodigo']}</strong> · ${propriedades['equipamentoCodigo']}<br/>
               Setor: ${propriedades['setorNome']}<br/>
               Velocidade: ${propriedades['velocidadeKmh'] ?? '—'} km/h<br/>
               Última atualização: ${new Date(String(propriedades['recebidoEm'])).toLocaleTimeString('pt-BR')}
@@ -172,7 +191,8 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
           .setLngLat(evento.lngLat)
           .setHTML(
             `<div style="font-size:12px;line-height:1.4">
-              <strong>${propriedades['ruaNome']}</strong> (${propriedades['trechoCodigo']})<br/>
+              <strong>${propriedades['ruaNome'] || propriedades['trechoCodigo']}</strong>${propriedades['ruaNome'] ? ' (' + propriedades['trechoCodigo'] + ')' : ''}<br/>
+              ${propriedades['setorNome'] ? propriedades['setorNome'] + '<br/>' : ''}
               Status: ${propriedades['status']} · ${propriedades['percentualExecutado']}%
             </div>`,
           )
@@ -191,7 +211,11 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
   }
 
   ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    this.popup?.remove();
     this.mapa?.remove();
+    this.mapa = null;
   }
 
   private atualizarCamadas(): void {
@@ -224,6 +248,7 @@ function paraFeatureCollectionTrechos(trechos: MapaTrecho[]): FeatureCollection 
         trechoExecucaoId: trecho.trechoExecucaoId,
         trechoCodigo: trecho.trechoCodigo,
         ruaNome: trecho.ruaNome,
+        setorNome: trecho.setorNome,
         status: trecho.status,
         percentualExecutado: Math.round(trecho.percentualExecutado),
       },
@@ -240,7 +265,7 @@ function paraFeatureCollectionAtivos(ativos: MapaAtivo[]): FeatureCollection {
       properties: {
         equipamentoId: ativo.equipamentoId,
         equipamentoCodigo: ativo.equipamentoCodigo,
-        equipeNome: ativo.equipeNome,
+        colaboradoresNomes: ativo.colaboradoresNomes,
         setorNome: ativo.setorNome,
         velocidadeKmh: ativo.velocidadeKmh,
         recebidoEm: ativo.recebidoEm,

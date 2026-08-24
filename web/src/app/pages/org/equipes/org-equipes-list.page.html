@@ -2,9 +2,9 @@
   <header class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div>
       <p class="text-xs uppercase tracking-[0.24em] text-navy-600">Cadastros</p>
-      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Equipes</h2>
+      <h2 class="mt-2 text-2xl font-semibold tracking-tight">Colaboradores</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Paridade com o legado: equipes, garis e lutocares na mesma tela
+        Funcionários (nome, matrícula e lutocar designado) e cadastro de lutocares
       </p>
     </div>
   </header>
@@ -14,25 +14,13 @@
       type="button"
       class="rounded-lg px-3 py-1.5 text-sm transition"
       [class]="
-        aba() === 'equipes'
+        aba() === 'colaboradores'
           ? 'bg-navy-800 text-white'
           : 'text-slate-600 hover:text-slate-900'
       "
-      (click)="selecionarAba('equipes')"
+      (click)="selecionarAba('colaboradores')"
     >
-      Equipes
-    </button>
-    <button
-      type="button"
-      class="rounded-lg px-3 py-1.5 text-sm transition"
-      [class]="
-        aba() === 'garis'
-          ? 'bg-navy-800 text-white'
-          : 'text-slate-600 hover:text-slate-900'
-      "
-      (click)="selecionarAba('garis')"
-    >
-      Garis
+      Colaboradores
     </button>
     <button
       type="button"
@@ -61,147 +49,30 @@
 
   @if (carregando()) {
     <p class="text-sm text-slate-500">Carregando…</p>
-  } @else if (aba() === 'equipes') {
+  } @else if (aba() === 'colaboradores') {
     <div class="mb-4 flex justify-end">
       <button
         type="button"
         class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700"
-        (click)="abrirFormEquipe()"
+        (click)="abrirFormColaborador()"
       >
-        Nova equipe
+        Novo colaborador
       </button>
     </div>
 
-    @if (mostrarFormEquipe()) {
+    @if (mostrarFormColaborador()) {
       <form
         class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-4"
-        [formGroup]="formEquipe"
-        (ngSubmit)="salvarEquipe()"
+        [formGroup]="formColaborador"
+        (ngSubmit)="salvarColaborador()"
       >
         <h3 class="text-sm font-medium text-slate-800">
-          {{ editandoEquipeId() ? 'Editar equipe' : 'Nova equipe' }}
+          {{ editandoColaboradorId() ? 'Editar colaborador' : 'Novo colaborador' }}
         </h3>
         <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="setorId">Setor</label>
-          <select
-            id="setorId"
-            formControlName="setorId"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
-          >
-            <option [ngValue]="0" disabled>Selecione</option>
-            @for (setor of setores(); track setor.id) {
-              <option [ngValue]="setor.id">{{ setor.nome }}</option>
-            }
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="nomeEquipe">Nome</label>
+          <label class="text-xs text-slate-500" for="nomeColaborador">Nome</label>
           <input
-            id="nomeEquipe"
-            formControlName="nome"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
-          />
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            [disabled]="salvando()"
-          >
-            Salvar
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500"
-            (click)="fecharFormEquipe()"
-          >
-            Cancelar
-          </button>
-        </div>
-      </form>
-    }
-
-    @if (equipes().length === 0) {
-      <p class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-        Nenhuma equipe cadastrada.
-      </p>
-    } @else {
-      <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-        @for (equipe of equipes(); track equipe.id) {
-          <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <div>
-              <p class="font-medium text-slate-900">{{ equipe.nome }}</p>
-              <p class="text-xs text-slate-500">{{ equipe.setorNome }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span
-                class="rounded-full px-2.5 py-0.5 text-xs"
-                [class]="
-                  equipe.ativo ? 'bg-navy-800 text-white' : 'bg-slate-100 text-slate-500'
-                "
-              >
-                {{ equipe.ativo ? 'Ativa' : 'Inativa' }}
-              </span>
-              <button
-                type="button"
-                class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-400"
-                (click)="abrirFormEquipe(equipe)"
-              >
-                Editar
-              </button>
-              @if (equipe.ativo) {
-                <button
-                  type="button"
-                  class="rounded-lg border border-rose-500/40 px-2.5 py-1 text-xs text-rose-600"
-                  (click)="desativarEquipe(equipe)"
-                >
-                  Desativar
-                </button>
-              }
-            </div>
-          </li>
-        }
-      </ul>
-    }
-  } @else if (aba() === 'garis') {
-    <div class="mb-4 flex justify-end">
-      <button
-        type="button"
-        class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700"
-        (click)="abrirFormGari()"
-      >
-        Novo gari
-      </button>
-    </div>
-
-    @if (mostrarFormGari()) {
-      <form
-        class="mb-6 grid max-w-xl gap-3 rounded-xl border border-slate-200 bg-white p-4"
-        [formGroup]="formGari"
-        (ngSubmit)="salvarGari()"
-      >
-        <h3 class="text-sm font-medium text-slate-800">
-          {{ editandoGariId() ? 'Editar gari' : 'Novo gari' }}
-        </h3>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="equipeGari">Equipe</label>
-          <select
-            id="equipeGari"
-            formControlName="equipeId"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
-          >
-            <option [ngValue]="0" disabled>Selecione</option>
-            @for (equipe of equipes(); track equipe.id) {
-              @if (equipe.ativo) {
-                <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
-              }
-            }
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="nomeGari">Nome</label>
-          <input
-            id="nomeGari"
+            id="nomeColaborador"
             formControlName="nome"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
           />
@@ -214,6 +85,19 @@
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
           />
         </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="lutocarColaborador">Lutocar</label>
+          <select
+            id="lutocarColaborador"
+            formControlName="equipamentoId"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          >
+            <option [ngValue]="0" disabled>Selecione</option>
+            @for (lutocar of lutocaresAtivos(); track lutocar.id) {
+              <option [ngValue]="lutocar.id">{{ lutocar.codigo }}</option>
+            }
+          </select>
+        </div>
         <div class="flex flex-wrap gap-2">
           <button
             type="submit"
@@ -225,7 +109,7 @@
           <button
             type="button"
             class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-500"
-            (click)="fecharFormGari()"
+            (click)="fecharFormColaborador()"
           >
             Cancelar
           </button>
@@ -233,31 +117,41 @@
       </form>
     }
 
-    @if (garis().length === 0) {
+    @if (colaboradores().length === 0) {
       <p class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-        Nenhum gari cadastrado.
+        Nenhum colaborador cadastrado.
       </p>
     } @else {
       <ul class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-        @for (gari of garis(); track gari.id) {
+        @for (colaborador of colaboradores(); track colaborador.id) {
           <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div>
-              <p class="font-medium text-slate-900">{{ gari.nome }}</p>
-              <p class="text-xs text-slate-500">{{ gari.matricula }} · {{ gari.equipeNome }}</p>
+              <p class="font-medium text-slate-900">{{ colaborador.nome }}</p>
+              <p class="text-xs text-slate-500">
+                {{ colaborador.matricula }} · {{ colaborador.equipamentoCodigo }}
+              </p>
             </div>
             <div class="flex items-center gap-2">
+              <span
+                class="rounded-full px-2.5 py-0.5 text-xs"
+                [class]="
+                  colaborador.ativo ? 'bg-navy-800 text-white' : 'bg-slate-100 text-slate-500'
+                "
+              >
+                {{ colaborador.ativo ? 'Ativo' : 'Inativo' }}
+              </span>
               <button
                 type="button"
                 class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-400"
-                (click)="abrirFormGari(gari)"
+                (click)="abrirFormColaborador(colaborador)"
               >
                 Editar
               </button>
-              @if (gari.ativo) {
+              @if (colaborador.ativo) {
                 <button
                   type="button"
                   class="rounded-lg border border-rose-500/40 px-2.5 py-1 text-xs text-rose-600"
-                  (click)="desativarGari(gari)"
+                  (click)="desativarColaborador(colaborador)"
                 >
                   Desativar
                 </button>
@@ -283,6 +177,28 @@
       } @else {
         <span></span>
       }
+      <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        class="rounded-lg border border-navy-300 bg-white px-4 py-2 text-sm font-medium text-navy-800 hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="sincronizandoRas() || importandoRas()"
+        (click)="sincronizarPosicoesRas()"
+      >
+        {{ sincronizandoRas() ? 'Atualizando…' : 'Atualizar posições' }}
+      </button>
+      <button
+        type="button"
+        class="rounded-lg border border-navy-300 bg-white px-4 py-2 text-sm font-medium text-navy-800 hover:bg-navy-50 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!podeCadastrarLutocar() || importandoRas() || sincronizandoRas()"
+        [title]="
+          podeCadastrarLutocar()
+            ? 'Cadastra até 5 lutocares da RasSystem (prioriza quem está transmitindo) e puxa a posição atual'
+            : 'Teto de Lutocares atingido ou sem licença vigente'
+        "
+        (click)="importarDaRasSystem()"
+      >
+        {{ importandoRas() ? 'Importando…' : 'Puxar 5 da RasSystem' }}
+      </button>
       <button
         type="button"
         class="rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -296,6 +212,7 @@
       >
         Novo lutocar
       </button>
+      </div>
     </div>
 
     @if (mostrarFormLutocar()) {
@@ -307,21 +224,6 @@
         <h3 class="text-sm font-medium text-slate-800">
           {{ editandoLutocarId() ? 'Editar lutocar' : 'Novo lutocar' }}
         </h3>
-        <div class="space-y-1">
-          <label class="text-xs text-slate-500" for="equipeLutocar">Equipe</label>
-          <select
-            id="equipeLutocar"
-            formControlName="equipeId"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
-          >
-            <option [ngValue]="0" disabled>Selecione</option>
-            @for (equipe of equipes(); track equipe.id) {
-              @if (equipe.ativo) {
-                <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
-              }
-            }
-          </select>
-        </div>
         <div class="space-y-1">
           <label class="text-xs text-slate-500" for="codigoLutocar">Código</label>
           <input
@@ -368,9 +270,12 @@
             <div>
               <p class="font-medium text-slate-900">{{ lutocar.codigo }}</p>
               <p class="text-xs text-slate-500">
-                {{ lutocar.equipeNome }}
+                {{ rotuloFonte(lutocar) }}
+                @if (lutocar.codigoExterno) {
+                  · id {{ lutocar.codigoExterno }}
+                }
                 @if (lutocar.descricao) {
-                  <span>· {{ lutocar.descricao }}</span>
+                  · {{ lutocar.descricao }}
                 }
               </p>
             </div>

@@ -14,7 +14,7 @@
       <div>
         <p class="text-xs font-medium uppercase tracking-[0.16em] text-navy-600">Setor</p>
         <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{{ item.nome }}</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ item.cidadeNome }}</p>
+        <p class="mt-1 text-sm text-slate-500">{{ item.moduloNome }} · {{ item.cidadeNome }}</p>
       </div>
       @if (item.ativo) {
         <span class="admin-badge-ok">Ativo</span>
@@ -30,7 +30,17 @@
       <div class="admin-alert-ok mb-4">{{ mensagem }}</div>
     }
 
-    <form class="admin-card max-w-xl space-y-4 p-5" [formGroup]="form" (ngSubmit)="salvar()">
+    <div class="grid items-start gap-4 xl:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]">
+    <div class="space-y-4">
+    <form class="admin-card space-y-4 p-5" [formGroup]="form" (ngSubmit)="salvar()">
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700" for="moduloId">Serviço</label>
+        <select id="moduloId" formControlName="moduloId" class="admin-input">
+          @for (servico of opcoesServico(); track servico.moduloId) {
+            <option [ngValue]="servico.moduloId">{{ servico.nome }}</option>
+          }
+        </select>
+      </div>
       <div class="space-y-2">
         <label class="text-sm font-medium text-slate-700" for="cidadeId">Cidade</label>
         <select id="cidadeId" formControlName="cidadeId" class="admin-input">
@@ -64,5 +74,70 @@
         }
       </div>
     </form>
+
+    <section class="admin-card space-y-4 p-5">
+      <div>
+        <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <i class="ph ph-polygon text-navy-700" aria-hidden="true"></i>
+          Demarcação em área
+        </h3>
+        <p class="mt-1 text-sm text-slate-500">
+          Opcional. Confirme o polígono no mapa ou envie um ZIP. Não é necessário para operação por
+          trechos.
+        </p>
+      </div>
+      @if (item.temDemarcacao) {
+        <span class="admin-badge-info">Área cadastrada</span>
+      } @else {
+        <p class="text-sm text-slate-500">Nenhuma demarcação cadastrada.</p>
+      }
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-slate-700" for="shapefileSetor">ZIP do shapefile</label>
+        <input
+          id="shapefileSetor"
+          type="file"
+          accept=".zip,application/zip"
+          class="admin-input"
+          (change)="onArquivoDemarcacao($event)"
+        />
+        @if (previewandoShapefile()) {
+          <p class="text-xs text-slate-500">Lendo shapefile no mapa…</p>
+        }
+        @if (arquivoDemarcacao(); as arquivo) {
+          <p class="text-xs text-slate-500">{{ arquivo.name }}</p>
+        }
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="admin-btn-primary"
+          [disabled]="enviandoDemarcacao()"
+          (click)="enviarDemarcacao()"
+        >
+          <i class="ph ph-upload-simple" aria-hidden="true"></i>
+          {{ item.temDemarcacao ? 'Substituir ZIP' : 'Importar ZIP' }}
+        </button>
+        @if (item.temDemarcacao) {
+          <button
+            type="button"
+            class="admin-btn-secondary"
+            [disabled]="enviandoDemarcacao()"
+            (click)="removerDemarcacao()"
+          >
+            <i class="ph ph-trash" aria-hidden="true"></i>
+            Remover
+          </button>
+        }
+      </div>
+    </section>
+    </div>
+
+    <app-editor-poligono-setor
+      class="min-h-[28rem]"
+      [geomWkt]="item.geomWkt"
+      [geomGeoJson]="geomPreview() ?? item.geomGeoJson"
+      (confirmado)="onPoligonoConfirmado($event)"
+    />
+    </div>
   }
 </div>

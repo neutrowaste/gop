@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record TrechoRequest(
-	@NotNull Long ruaId,
+	@NotNull Long setorId,
+	@Size(max = 200) String ruaNome,
 	@NotBlank @Size(max = 80) String codigo,
 	@NotBlank String geomWkt,
 	StatusTrecho status,

@@ -21,12 +21,11 @@ import { OrgEquipesListPage } from './pages/org/equipes/org-equipes-list.page';
 import { OrgOcorrenciaDetailPage } from './pages/org/ocorrencias/org-ocorrencia-detail.page';
 import { OrgOcorrenciasListPage } from './pages/org/ocorrencias/org-ocorrencias-list.page';
 import { OrgShellPage } from './pages/org/org-shell.page';
-import { OrgRuaDetailPage } from './pages/org/ruas/org-rua-detail.page';
-import { OrgRuasListPage } from './pages/org/ruas/org-ruas-list.page';
 import { OrgSetorDetailPage } from './pages/org/setores/org-setor-detail.page';
 import { OrgSetoresListPage } from './pages/org/setores/org-setores-list.page';
 import { OrgTrechoDetailPage } from './pages/org/trechos/org-trecho-detail.page';
 import { OrgTrechosListPage } from './pages/org/trechos/org-trechos-list.page';
+import { OrgServicoPlaceholderPage } from './pages/org/servicos/org-servico-placeholder.page';
 import { OrgUsuarioDetailPage } from './pages/org/usuarios/org-usuario-detail.page';
 import { OrgUsuariosListPage } from './pages/org/usuarios/org-usuarios-list.page';
 
@@ -54,8 +53,6 @@ export const routes: Routes = [
       { path: 'usuarios/:id', component: OrgUsuarioDetailPage },
       { path: 'setores', component: OrgSetoresListPage },
       { path: 'setores/:id', component: OrgSetorDetailPage },
-      { path: 'ruas', component: OrgRuasListPage },
-      { path: 'ruas/:id', component: OrgRuaDetailPage },
       { path: 'trechos', component: OrgTrechosListPage },
       { path: 'trechos/:id', component: OrgTrechoDetailPage },
       { path: 'equipes', component: OrgEquipesListPage },
@@ -67,6 +64,14 @@ export const routes: Routes = [
       { path: 'escalas/:id', component: OrgEscalaDetailPage },
       { path: 'ocorrencias', component: OrgOcorrenciasListPage },
       { path: 'ocorrencias/:id', component: OrgOcorrenciaDetailPage },
+      {
+        path: 'servicos/:codigo/dashboard',
+        loadComponent: () =>
+          import('./pages/org/servicos/org-servico-dashboard.page').then(
+            (m) => m.OrgServicoDashboardPage,
+          ),
+      },
+      { path: 'servicos/:codigo', component: OrgServicoPlaceholderPage },
     ],
   },
   {

@@ -1,5 +1,6 @@
 package br.com.gop.services;
 
+import br.com.gop.models.Equipamento;
 import br.com.gop.models.Escala;
 import br.com.gop.models.MapaAtivoResponse;
 import br.com.gop.models.MapaOperacionalResponse;
@@ -63,9 +64,13 @@ public class MapaOperacionalService {
 		List<MapaTrechoResponse> trechos = new ArrayList<>();
 
 		for (Escala escala : escalasPublicadas) {
-			posicaoGpsRepository
-				.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(empresaId, escala.getEquipamento().getId())
-				.ifPresent(posicao -> ativos.add(paraAtivo(escala, posicao, agora, toleranciaMinutos, silencioMinutos)));
+			for (Equipamento equipamento : escala.equipamentosDosColaboradores()) {
+				posicaoGpsRepository
+					.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(empresaId, equipamento.getId())
+					.ifPresent(posicao -> ativos.add(
+						paraAtivo(escala, equipamento, posicao, agora, toleranciaMinutos, silencioMinutos)
+					));
+			}
 
 			for (TrechoExecucao trechoExecucao : trechoExecucaoRepository
 				.findByEscalaIdAndAtivoTrueOrderByOrdemAsc(escala.getId())) {
@@ -78,6 +83,7 @@ public class MapaOperacionalService {
 
 	private MapaAtivoResponse paraAtivo(
 		Escala escala,
+		Equipamento equipamento,
 		PosicaoGps posicao,
 		Instant agora,
 		long toleranciaMinutos,
@@ -95,10 +101,9 @@ public class MapaOperacionalService {
 
 		return new MapaAtivoResponse(
 			escala.getId(),
-			escala.getEquipamento().getId(),
-			escala.getEquipamento().getCodigo(),
-			escala.getEquipe().getId(),
-			escala.getEquipe().getNome(),
+			equipamento.getId(),
+			equipamento.getCodigo(),
+			escala.nomesColaboradores(),
 			escala.getSetor().getId(),
 			escala.getSetor().getNome(),
 			escala.getTurno(),
@@ -119,11 +124,10 @@ public class MapaOperacionalService {
 			escala.getId(),
 			trecho.getId(),
 			trecho.getCodigo(),
-			trecho.getRua().getNome(),
+			trecho.getNomeRua() == null ? "" : trecho.getNomeRua(),
 			escala.getSetor().getId(),
 			escala.getSetor().getNome(),
-			escala.getEquipe().getId(),
-			escala.getEquipe().getNome(),
+			escala.nomesColaboradores(),
 			trechoExecucao.getOrdem(),
 			trechoExecucao.getStatus(),
 			trechoExecucao.getPercentualExecutado(),

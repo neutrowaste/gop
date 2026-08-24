@@ -22,6 +22,8 @@ spring:
       # Sem PostGIS instalado no servidor, CREATE EXTENSION falha; não derruba o boot.
       # Após instalar PostGIS (Stack Builder) e reiniciar o PG, reinicie a API.
       continue-on-error: true
+      # schema-postgis.sql usa ";;" para não partir o bloco DO $$ no meio.
+      separator: ";;"
       schema-locations: classpath:schema-postgis.sql
 
 gop:

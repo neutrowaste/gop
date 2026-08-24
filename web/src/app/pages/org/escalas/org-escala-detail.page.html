@@ -12,17 +12,25 @@
   } @else if (escala(); as item) {
     <header class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <p class="text-xs font-medium uppercase tracking-[0.16em] text-navy-600">Escala</p>
+        <p class="text-xs font-medium uppercase tracking-[0.16em] text-navy-600">
+          Escala · {{ tipoLabels[item.tipo] }}
+        </p>
         <h2 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-          {{ item.data }} · {{ turnoLabels[item.turno] }}
+          @if (modeloFrequencia()) {
+            {{ rotuloDias(item) }} · {{ turnoLabels[item.turno] }}
+          } @else {
+            {{ item.data }} · {{ turnoLabels[item.turno] }}
+          }
         </h2>
         <p class="mt-1 text-sm text-slate-500">
-          {{ item.setorNome }} · {{ item.equipeNome }} · {{ item.equipamentoCodigo }}
+          {{ item.setorNome }} · {{ resumoColaboradores(item) }}
         </p>
       </div>
       <div class="flex flex-col items-end gap-2">
         @if (!item.ativo) {
           <span class="admin-badge-off">Cancelada</span>
+        } @else if (modeloFrequencia()) {
+          <span class="admin-badge-ok">Ativa</span>
         } @else if (item.status === 'PUBLICADA') {
           <span class="admin-badge-ok">Publicada</span>
         } @else {
@@ -38,52 +46,85 @@
       <div class="admin-alert-ok mb-4">{{ mensagem }}</div>
     }
 
-    @if (item.status === 'PUBLICADA' && item.ativo) {
+    @if (modeloFrequencia() && item.ativo) {
       <div class="mb-4 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-800">
-        Escala publicada: o motor de regras já pode processar as posições deste dia/turno. Despublique
-        para editar os campos da amarração.
+        Frequência ativa: o motor recebe automaticamente a escala nos dias marcados. Troque os
+        colaboradores quando precisar; a equipe de hoje também é atualizada.
+      </div>
+    }
+    @if (instanciaFrequencia() && item.ativo) {
+      <div class="mb-4 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-800">
+        Escala do dia gerada pela frequência.
+        <a
+          [routerLink]="['/org/escalas', item.origemId]"
+          class="font-medium text-navy-900 underline decoration-navy-300 underline-offset-2"
+        >
+          Abrir o modelo recorrente
+        </a>
+        para alterar os trechos do plano. Trocar colaboradores aqui atualiza também o modelo.
+      </div>
+    }
+    @if (item.tipo === 'AVULSA' && item.ativo) {
+      <div class="mb-4 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-800">
+        Escala avulsa deste dia: o motor já pode processar as posições. Colaboradores e o plano de
+        trechos podem ser ajustados.
       </div>
     }
 
     <form class="admin-card max-w-2xl space-y-4 p-5" [formGroup]="form" (ngSubmit)="salvar()">
-      <div class="grid gap-4 sm:grid-cols-2">
+      @if (modeloFrequencia()) {
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700" for="data">Data</label>
-          <input id="data" type="date" formControlName="data" class="admin-input" />
+          <p class="text-sm font-medium text-slate-700">Dias da semana</p>
+          <div class="flex flex-wrap gap-2">
+            @for (dia of diaSemanaOpcoes; track dia.valor) {
+              <label class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  class="rounded border-slate-300"
+                  [disabled]="!editavel()"
+                  [checked]="diasSelecionados().includes(dia.valor)"
+                  (change)="toggleDiaSemana(dia.valor, $any($event.target).checked)"
+                />
+                {{ dia.label }}
+              </label>
+            }
+          </div>
+          @if (form.controls.diasSemana.touched && form.controls.diasSemana.invalid) {
+            <p class="text-xs text-rose-600">Selecione ao menos um dia da semana.</p>
+          }
         </div>
+      } @else {
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="data">Data</label>
+            <input id="data" type="date" formControlName="data" class="admin-input" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="turno">Turno</label>
+            <select id="turno" formControlName="turno" class="admin-input">
+              @for (t of turnoOpcoes; track t) {
+                <option [ngValue]="t">{{ turnoLabels[t] }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+      @if (modeloFrequencia()) {
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700" for="turno">Turno</label>
-          <select id="turno" formControlName="turno" class="admin-input">
+          <label class="text-sm font-medium text-slate-700" for="turnoModelo">Turno</label>
+          <select id="turnoModelo" formControlName="turno" class="admin-input">
             @for (t of turnoOpcoes; track t) {
               <option [ngValue]="t">{{ turnoLabels[t] }}</option>
             }
           </select>
         </div>
-      </div>
+      }
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
           <label class="text-sm font-medium text-slate-700" for="setorId">Setor</label>
           <select id="setorId" formControlName="setorId" class="admin-input">
             @for (setor of setores(); track setor.id) {
-              <option [ngValue]="setor.id">{{ setor.nome }}</option>
-            }
-          </select>
-        </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700" for="equipeId">Equipe</label>
-          <select id="equipeId" formControlName="equipeId" class="admin-input">
-            @for (equipe of equipesDoSetor(); track equipe.id) {
-              <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
-            }
-          </select>
-        </div>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700" for="equipamentoId">Ativo GPS (Lutocar)</label>
-          <select id="equipamentoId" formControlName="equipamentoId" class="admin-input">
-            @for (equipamento of equipamentosDaEquipe(); track equipamento.id) {
-              <option [ngValue]="equipamento.id">{{ equipamento.codigo }}</option>
+              <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
             }
           </select>
         </div>
@@ -96,28 +137,57 @@
           </select>
         </div>
       </div>
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-sm font-medium text-slate-700">Colaboradores</p>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              class="rounded border-slate-300"
+              [disabled]="!editavel()"
+              [checked]="todosColaboradoresSelecionados()"
+              (change)="toggleTodosColaboradores($any($event.target).checked)"
+            />
+            Adicionar os colaboradores registrados
+          </label>
+        </div>
+        @if (colaboradores().length === 0) {
+          <p class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">
+            Nenhum colaborador cadastrado.
+          </p>
+        } @else {
+          <ul class="max-h-56 space-y-1 overflow-auto rounded-lg border border-slate-200 p-3">
+            @for (colaborador of colaboradores(); track colaborador.id) {
+              <li>
+                <label class="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    class="mt-0.5 rounded border-slate-300"
+                    [disabled]="!editavel()"
+                    [checked]="colaboradoresSelecionados().includes(colaborador.id)"
+                    (change)="toggleColaborador(colaborador.id, $any($event.target).checked)"
+                  />
+                  <span>
+                    <span class="font-medium text-slate-900">{{ colaborador.nome }}</span>
+                    <span class="block text-xs text-slate-500">
+                      {{ colaborador.matricula }} · {{ colaborador.equipamentoCodigo }}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        }
+        @if (form.controls.colaboradorIds.touched && form.controls.colaboradorIds.invalid) {
+          <p class="text-xs text-rose-600">Selecione ao menos um colaborador.</p>
+        }
+      </div>
 
       <div class="flex flex-wrap gap-2 pt-2">
         @if (editavel()) {
           <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
             <i class="ph ph-floppy-disk" aria-hidden="true"></i>
             Salvar
-          </button>
-        }
-        @if (item.ativo && item.status === 'RASCUNHO') {
-          <button
-            type="button"
-            class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="salvando()"
-            (click)="publicar()"
-          >
-            <i class="ph ph-check-circle" aria-hidden="true"></i>
-            Publicar
-          </button>
-        }
-        @if (item.ativo && item.status === 'PUBLICADA') {
-          <button type="button" class="admin-btn-secondary" [disabled]="salvando()" (click)="despublicar()">
-            Despublicar
           </button>
         }
         @if (item.ativo) {
@@ -132,12 +202,24 @@
     <section class="mt-10 max-w-4xl">
       <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 class="text-lg font-semibold text-slate-900">Trechos do dia</h3>
+          <h3 class="text-lg font-semibold text-slate-900">
+            @if (modeloFrequencia()) {
+              Plano de trechos
+            } @else {
+              Trechos do dia
+            }
+          </h3>
           <p class="mt-1 text-sm text-slate-500">
-            Plano de execução (RN-001): trechos e ordem que o motor de cobertura valida ao processar o GPS.
+            @if (modeloFrequencia()) {
+              Plano recorrente copiado para cada dia gerado. Alterações valem para os próximos dias.
+            } @else if (instanciaFrequencia()) {
+              Progresso do motor neste dia. Para mudar quais trechos entram no plano, edite o modelo da frequência.
+            } @else {
+              Plano de execução (RN-001): trechos e ordem que o motor de cobertura valida ao processar o GPS.
+            }
           </p>
         </div>
-        @if (editavel()) {
+        @if (planoEditavel()) {
           <button type="button" class="admin-btn-secondary" (click)="abrirFormTrecho()">
             <i class="ph ph-plus" aria-hidden="true"></i>
             Adicionar trecho
@@ -149,7 +231,7 @@
         <div class="admin-alert-error mb-4">{{ mensagem }}</div>
       }
 
-      @if (!editavel() && item.status === 'RASCUNHO') {
+      @if (!item.ativo) {
         <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           Escala cancelada: o plano não pode mais ser editado.
         </div>
@@ -166,7 +248,7 @@
             <select id="trechoId" formControlName="trechoId" class="admin-input">
               <option [ngValue]="0" disabled>Selecione</option>
               @for (trecho of trechosNaoAdicionados(); track trecho.id) {
-                <option [ngValue]="trecho.id">{{ trecho.codigo }} · {{ trecho.ruaNome }}</option>
+                <option [ngValue]="trecho.id">{{ trecho.codigo }}{{ trecho.ruaNome ? ' · ' + trecho.ruaNome : '' }}</option>
               }
             </select>
           </div>
@@ -190,7 +272,25 @@
       } @else if (trechosDoDia().length === 0) {
         <div class="admin-card border-dashed px-4 py-10 text-center">
           <i class="ph ph-path text-3xl text-slate-300" aria-hidden="true"></i>
-          <p class="mt-3 text-sm text-slate-500">Nenhum trecho no plano deste dia ainda.</p>
+          <p class="mt-3 text-sm text-slate-500">
+            @if (modeloFrequencia()) {
+              Nenhum trecho no plano recorrente ainda.
+            } @else if (instanciaFrequencia()) {
+              Nenhum trecho neste dia. Adicione o plano no modelo da frequência.
+            } @else {
+              Nenhum trecho no plano deste dia ainda.
+            }
+          </p>
+          @if (planoEditavel()) {
+            <button type="button" class="admin-btn-primary mt-4" (click)="abrirFormTrecho()">
+              <i class="ph ph-plus" aria-hidden="true"></i>
+              Adicionar trecho
+            </button>
+          } @else if (instanciaFrequencia() && item.origemId && item.ativo) {
+            <a [routerLink]="['/org/escalas', item.origemId]" class="admin-btn-primary mt-4">
+              Abrir frequência e adicionar trechos
+            </a>
+          }
         </div>
       } @else {
         <div class="admin-table-wrap">
@@ -209,7 +309,7 @@
               @for (trecho of trechosDoDia(); track trecho.id) {
                 <tr class="hover:bg-slate-50">
                   <td class="px-4 py-3 text-slate-700">
-                    @if (editavel()) {
+                    @if (planoEditavel()) {
                       <input
                         type="number"
                         min="1"
@@ -223,7 +323,7 @@
                   </td>
                   <td class="px-4 py-3">
                     <p class="font-medium text-slate-900">{{ trecho.trechoCodigo }}</p>
-                    <p class="text-xs text-slate-500">{{ trecho.ruaNome }}</p>
+                    <p class="text-xs text-slate-500">{{ trecho.ruaNome || '—' }}</p>
                   </td>
                   <td class="px-4 py-3">
                     @if (trecho.status === 'EXECUTADO' || trecho.status === 'JUSTIFICADO') {
@@ -244,7 +344,7 @@
                     <span [class.text-emerald-600]="trecho.tevePosicaoFim" class="text-slate-300">●</span>
                   </td>
                   <td class="px-4 py-3 text-right">
-                    @if (editavel()) {
+                    @if (planoEditavel()) {
                       <button
                         type="button"
                         class="text-sm font-medium text-rose-600 hover:text-rose-800"

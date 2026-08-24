@@ -7,7 +7,7 @@
       </p>
       <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Escala</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Amarração diária: Setor ↔ Equipe ↔ Ativo GPS ↔ Supervisor ↔ Turno
+        Frequência se repete nos dias da semana até cancelar. Avulsa vale só para a data escolhida.
       </p>
     </div>
     <button type="button" class="admin-btn-primary" (click)="abrirForm()">
@@ -25,35 +25,50 @@
     </div>
   }
 
-  <form class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5" [formGroup]="filtro">
-    <div class="space-y-1">
-      <label class="text-xs font-medium text-slate-500" for="filtroData">Data</label>
-      <input id="filtroData" type="date" formControlName="data" class="admin-input" />
-    </div>
+  <div class="mb-4 flex flex-wrap gap-2">
+    <button
+      type="button"
+      [class]="visao() === 'dia' ? 'admin-btn-primary' : 'admin-btn-secondary'"
+      (click)="mostrarDia()"
+    >
+      Do dia
+    </button>
+    <button
+      type="button"
+      [class]="visao() === 'frequencias' ? 'admin-btn-primary' : 'admin-btn-secondary'"
+      (click)="mostrarFrequencias()"
+    >
+      Frequências
+    </button>
+  </div>
+
+  <form
+    class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2"
+    [class.lg:grid-cols-4]="visao() === 'dia'"
+    [class.lg:grid-cols-3]="visao() === 'frequencias'"
+    [formGroup]="filtro"
+  >
+    @if (visao() === 'dia') {
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="filtroData">Data</label>
+        <input id="filtroData" type="date" formControlName="data" class="admin-input" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="filtroTipo">Tipo</label>
+        <select id="filtroTipo" formControlName="tipo" class="admin-input">
+          <option value="">Todos</option>
+          <option value="FREQUENCIA">Frequência</option>
+          <option value="AVULSA">Avulsa</option>
+        </select>
+      </div>
+    }
     <div class="space-y-1">
       <label class="text-xs font-medium text-slate-500" for="filtroSetor">Setor</label>
       <select id="filtroSetor" formControlName="setorId" class="admin-input">
         <option [ngValue]="0">Todos</option>
         @for (setor of setores(); track setor.id) {
-          <option [ngValue]="setor.id">{{ setor.nome }}</option>
+          <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
         }
-      </select>
-    </div>
-    <div class="space-y-1">
-      <label class="text-xs font-medium text-slate-500" for="filtroEquipe">Equipe</label>
-      <select id="filtroEquipe" formControlName="equipeId" class="admin-input">
-        <option [ngValue]="0">Todas</option>
-        @for (equipe of equipesDoSetorFiltro(); track equipe.id) {
-          <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
-        }
-      </select>
-    </div>
-    <div class="space-y-1">
-      <label class="text-xs font-medium text-slate-500" for="filtroStatus">Status</label>
-      <select id="filtroStatus" formControlName="status" class="admin-input">
-        <option value="">Todos</option>
-        <option value="RASCUNHO">Rascunho</option>
-        <option value="PUBLICADA">Publicada</option>
       </select>
     </div>
     <div class="flex items-end">
@@ -69,11 +84,53 @@
         <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
         Nova escala
       </h3>
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-slate-500" for="data">Data</label>
-          <input id="data" type="date" formControlName="data" class="admin-input" />
+      <div class="space-y-1">
+        <p class="text-xs font-medium text-slate-500">Tipo</p>
+        <div class="flex flex-wrap gap-4">
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="radio" formControlName="tipo" value="FREQUENCIA" />
+            Frequência
+          </label>
+          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input type="radio" formControlName="tipo" value="AVULSA" />
+            Avulsa
+          </label>
         </div>
+        <p class="text-xs text-slate-500">
+          @if (form.controls.tipo.value === 'FREQUENCIA') {
+            Publicada automaticamente nos dias marcados. Se o setor tiver trechos, selecione o plano na criação.
+          } @else {
+            Execução única na data escolhida. Se o setor tiver trechos, selecione o plano na criação.
+          }
+        </p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        @if (form.controls.tipo.value === 'AVULSA') {
+          <div class="space-y-1">
+            <label class="text-xs font-medium text-slate-500" for="data">Data</label>
+            <input id="data" type="date" formControlName="data" class="admin-input" />
+          </div>
+        } @else {
+          <div class="space-y-1 sm:col-span-2">
+            <p class="text-xs font-medium text-slate-500">Dias da semana</p>
+            <div class="flex flex-wrap gap-2">
+              @for (dia of diaSemanaOpcoes; track dia.valor) {
+                <label class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    class="rounded border-slate-300"
+                    [checked]="diasSelecionados().includes(dia.valor)"
+                    (change)="toggleDiaSemana(dia.valor, $any($event.target).checked)"
+                  />
+                  {{ dia.label }}
+                </label>
+              }
+            </div>
+            @if (form.controls.diasSemana.touched && form.controls.diasSemana.invalid) {
+              <p class="text-xs text-rose-600">Selecione ao menos um dia da semana.</p>
+            }
+          </div>
+        }
         <div class="space-y-1">
           <label class="text-xs font-medium text-slate-500" for="turno">Turno</label>
           <select id="turno" formControlName="turno" class="admin-input">
@@ -89,29 +146,7 @@
           <select id="setorId" formControlName="setorId" class="admin-input">
             <option [ngValue]="0" disabled>Selecione</option>
             @for (setor of setores(); track setor.id) {
-              <option [ngValue]="setor.id">{{ setor.nome }}</option>
-            }
-          </select>
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-slate-500" for="equipeId">Equipe</label>
-          <select id="equipeId" formControlName="equipeId" class="admin-input">
-            <option [ngValue]="0" disabled>Selecione</option>
-            @for (equipe of equipesDoSetorForm(); track equipe.id) {
-              <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
-            }
-          </select>
-        </div>
-      </div>
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-slate-500" for="equipamentoId">
-            Ativo GPS (Lutocar)
-          </label>
-          <select id="equipamentoId" formControlName="equipamentoId" class="admin-input">
-            <option [ngValue]="0" disabled>Selecione</option>
-            @for (equipamento of equipamentosDaEquipeForm(); track equipamento.id) {
-              <option [ngValue]="equipamento.id">{{ equipamento.codigo }}</option>
+              <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
             }
           </select>
         </div>
@@ -124,6 +159,86 @@
             }
           </select>
         </div>
+      </div>
+      @if (trechosDoSetor().length > 0) {
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs font-medium text-slate-500">Trechos do setor</p>
+            <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                class="rounded border-slate-300"
+                [checked]="todosTrechosSelecionados()"
+                (change)="toggleTodosTrechos($any($event.target).checked)"
+              />
+              Adicionar todos os trechos
+            </label>
+          </div>
+          <ul class="max-h-56 space-y-1 overflow-auto rounded-lg border border-slate-200 p-3">
+            @for (trecho of trechosDoSetor(); track trecho.id) {
+              <li>
+                <label class="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    class="mt-0.5 rounded border-slate-300"
+                    [checked]="trechosSelecionados().includes(trecho.id)"
+                    (change)="toggleTrecho(trecho.id, $any($event.target).checked)"
+                  />
+                  <span>
+                    <span class="font-medium text-slate-900">{{ trecho.codigo }}</span>
+                    <span class="block text-xs text-slate-500">{{ trecho.ruaNome || 'Sem nome de via' }}</span>
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+          @if (form.controls.trechoIds.touched && form.controls.trechoIds.invalid) {
+            <p class="text-xs text-rose-600">Selecione ao menos um trecho deste setor.</p>
+          }
+        </div>
+      }
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-xs font-medium text-slate-500">Colaboradores</p>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              class="rounded border-slate-300"
+              [checked]="todosColaboradoresSelecionados()"
+              (change)="toggleTodosColaboradores($any($event.target).checked)"
+            />
+            Adicionar os colaboradores registrados
+          </label>
+        </div>
+        @if (colaboradores().length === 0) {
+          <p class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-500">
+            Nenhum colaborador cadastrado. Cadastre funcionários em Colaboradores antes de criar a escala.
+          </p>
+        } @else {
+          <ul class="max-h-56 space-y-1 overflow-auto rounded-lg border border-slate-200 p-3">
+            @for (colaborador of colaboradores(); track colaborador.id) {
+              <li>
+                <label class="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    class="mt-0.5 rounded border-slate-300"
+                    [checked]="colaboradoresSelecionados().includes(colaborador.id)"
+                    (change)="toggleColaborador(colaborador.id, $any($event.target).checked)"
+                  />
+                  <span>
+                    <span class="font-medium text-slate-900">{{ colaborador.nome }}</span>
+                    <span class="block text-xs text-slate-500">
+                      {{ colaborador.matricula }} · {{ colaborador.equipamentoCodigo }}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        }
+        @if (form.controls.colaboradorIds.touched && form.controls.colaboradorIds.invalid) {
+          <p class="text-xs text-rose-600">Selecione ao menos um colaborador.</p>
+        }
       </div>
       <div class="flex flex-wrap gap-2 pt-1">
         <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
@@ -147,11 +262,16 @@
       <table class="w-full text-left text-sm">
         <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            <th class="px-4 py-3 font-medium">Data</th>
+            @if (visao() === 'dia') {
+              <th class="px-4 py-3 font-medium">Data</th>
+            } @else {
+              <th class="px-4 py-3 font-medium">Dias</th>
+            }
+            <th class="px-4 py-3 font-medium">Tipo</th>
             <th class="px-4 py-3 font-medium">Turno</th>
             <th class="px-4 py-3 font-medium">Setor</th>
-            <th class="px-4 py-3 font-medium">Equipe</th>
-            <th class="px-4 py-3 font-medium">Ativo GPS</th>
+            <th class="px-4 py-3 font-medium">Colaboradores</th>
+            <th class="px-4 py-3 font-medium">Lutocares</th>
             <th class="px-4 py-3 font-medium">Supervisor</th>
             <th class="px-4 py-3 font-medium">Status</th>
             <th class="px-4 py-3 font-medium"></th>
@@ -160,15 +280,24 @@
         <tbody class="divide-y divide-slate-100">
           @for (escala of escalas(); track escala.id) {
             <tr class="hover:bg-slate-50" [class.opacity-50]="!escala.ativo">
-              <td class="px-4 py-3 text-slate-700">{{ escala.data }}</td>
+              <td class="px-4 py-3 text-slate-700">
+                @if (visao() === 'dia') {
+                  {{ escala.data }}
+                } @else {
+                  {{ rotuloDias(escala) }}
+                }
+              </td>
+              <td class="px-4 py-3 text-slate-700">{{ tipoLabels[escala.tipo] }}</td>
               <td class="px-4 py-3 text-slate-700">{{ turnoLabels[escala.turno] }}</td>
               <td class="px-4 py-3 text-slate-700">{{ escala.setorNome }}</td>
-              <td class="px-4 py-3 font-medium text-slate-900">{{ escala.equipeNome }}</td>
-              <td class="px-4 py-3 text-slate-500">{{ escala.equipamentoCodigo }}</td>
+              <td class="px-4 py-3 font-medium text-slate-900">{{ nomesColaboradores(escala) }}</td>
+              <td class="px-4 py-3 text-slate-500">{{ codigosLutocar(escala) }}</td>
               <td class="px-4 py-3 text-slate-500">{{ escala.supervisorNome }}</td>
               <td class="px-4 py-3">
                 @if (!escala.ativo) {
                   <span class="admin-badge-off">Cancelada</span>
+                } @else if (escala.tipo === 'FREQUENCIA' && !escala.origemId && !escala.data) {
+                  <span class="admin-badge-ok">Ativa</span>
                 } @else if (escala.status === 'PUBLICADA') {
                   <span class="admin-badge-ok">Publicada</span>
                 } @else {

@@ -1,0 +1,39 @@
+<div class="flex h-full min-h-[24rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+  <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2">
+    <p class="mr-auto text-xs font-semibold uppercase tracking-wide text-slate-500">Área do setor</p>
+    @if (!fechado()) {
+      <button type="button" class="admin-btn-secondary" (click)="fecharPoligono()" [disabled]="verticesCount() < 3">
+        Fechar polígono
+      </button>
+    } @else if (!origemShapefile()) {
+      <button type="button" class="admin-btn-secondary" (click)="redesenhar()">
+        Continuar desenhando
+      </button>
+    }
+    <button
+      type="button"
+      class="admin-btn-secondary"
+      (click)="limpar()"
+      [disabled]="verticesCount() === 0 && !origemShapefile()"
+    >
+      Limpar
+    </button>
+    <button type="button" class="admin-btn-primary" (click)="confirmar()" [disabled]="verticesCount() < 3">
+      Confirmar polígono
+    </button>
+  </div>
+  <div class="relative min-h-[20rem] flex-1">
+    <div #mapaContainer class="h-full min-h-[20rem] w-full"></div>
+  </div>
+  <p class="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
+    @if (origemShapefile()) {
+      Área do shapefile desenhada no mapa.
+    } @else if (confirmadoLocal()) {
+      Polígono confirmado. Ele será usado como demarcação do setor.
+    } @else if (fechado()) {
+      Polígono fechado. Confirme para preencher o campo de demarcação.
+    } @else {
+      Clique no mapa para adicionar vértices. Duplo clique ou “Fechar polígono” para concluir.
+    }
+  </p>
+</div>

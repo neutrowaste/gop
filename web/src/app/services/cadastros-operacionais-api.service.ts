@@ -9,24 +9,24 @@ import {
   ColaboradorRequest,
   Equipamento,
   EquipamentoRequest,
-  Equipe,
-  EquipeRequest,
   Escala,
   EscalaRequest,
   Ocorrencia,
   OcorrenciaResolucaoRequest,
   ParametroEmpresa,
-  Rua,
-  RuaRequest,
   Setor,
+  SetorDemarcacaoPreview,
   SetorRequest,
   StatusEscala,
   StatusOcorrencia,
+  TipoEscala,
   TipoOcorrencia,
   Trecho,
+  TrechoDesenhoRequest,
   TrechoExecucao,
   TrechoExecucaoReordenarRequest,
   TrechoExecucaoRequest,
+  TrechoImportacao,
   TrechoRequest,
 } from '../models/cadastros-operacionais';
 import { ApiService } from './api.service';
@@ -60,10 +60,13 @@ export class CadastrosOperacionaisApiService {
     return this.http.delete<void>(`${this.base}/cidades/${id}`);
   }
 
-  listarSetores(cidadeId?: number): Observable<Setor[]> {
+  listarSetores(cidadeId?: number, moduloId?: number): Observable<Setor[]> {
     let params = new HttpParams();
     if (cidadeId != null) {
       params = params.set('cidadeId', cidadeId);
+    }
+    if (moduloId != null) {
+      params = params.set('moduloId', moduloId);
     }
     return this.http.get<Setor[]>(`${this.base}/setores`, { params });
   }
@@ -84,34 +87,30 @@ export class CadastrosOperacionaisApiService {
     return this.http.delete<void>(`${this.base}/setores/${id}`);
   }
 
-  listarRuas(cidadeId?: number): Observable<Rua[]> {
+  importarShapefileSetor(id: number, arquivo: File): Observable<Setor> {
+    const body = new FormData();
+    body.append('arquivo', arquivo);
+    return this.http.post<Setor>(`${this.base}/setores/${id}/shapefile`, body);
+  }
+
+  preVisualizarShapefileSetor(arquivo: File): Observable<SetorDemarcacaoPreview> {
+    const body = new FormData();
+    body.append('arquivo', arquivo);
+    return this.http.post<SetorDemarcacaoPreview>(`${this.base}/setores/shapefile-preview`, body);
+  }
+
+  removerDemarcacaoSetor(id: number): Observable<Setor> {
+    return this.http.delete<Setor>(`${this.base}/setores/${id}/shapefile`);
+  }
+
+  atualizarDemarcacaoSetor(id: number, geomWkt: string): Observable<Setor> {
+    return this.http.put<Setor>(`${this.base}/setores/${id}/demarcacao`, { geomWkt });
+  }
+
+  listarTrechos(setorId?: number): Observable<Trecho[]> {
     let params = new HttpParams();
-    if (cidadeId != null) {
-      params = params.set('cidadeId', cidadeId);
-    }
-    return this.http.get<Rua[]>(`${this.base}/ruas`, { params });
-  }
-
-  buscarRua(id: number): Observable<Rua> {
-    return this.http.get<Rua>(`${this.base}/ruas/${id}`);
-  }
-
-  criarRua(request: RuaRequest): Observable<Rua> {
-    return this.http.post<Rua>(`${this.base}/ruas`, request);
-  }
-
-  atualizarRua(id: number, request: RuaRequest): Observable<Rua> {
-    return this.http.put<Rua>(`${this.base}/ruas/${id}`, request);
-  }
-
-  desativarRua(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/ruas/${id}`);
-  }
-
-  listarTrechos(ruaId?: number): Observable<Trecho[]> {
-    let params = new HttpParams();
-    if (ruaId != null) {
-      params = params.set('ruaId', ruaId);
+    if (setorId != null) {
+      params = params.set('setorId', setorId);
     }
     return this.http.get<Trecho[]>(`${this.base}/trechos`, { params });
   }
@@ -124,6 +123,10 @@ export class CadastrosOperacionaisApiService {
     return this.http.post<Trecho>(`${this.base}/trechos`, request);
   }
 
+  criarTrechosDesenho(request: TrechoDesenhoRequest): Observable<TrechoImportacao> {
+    return this.http.post<TrechoImportacao>(`${this.base}/trechos/desenho`, request);
+  }
+
   atualizarTrecho(id: number, request: TrechoRequest): Observable<Trecho> {
     return this.http.put<Trecho>(`${this.base}/trechos/${id}`, request);
   }
@@ -132,36 +135,26 @@ export class CadastrosOperacionaisApiService {
     return this.http.delete<void>(`${this.base}/trechos/${id}`);
   }
 
-  listarEquipes(setorId?: number): Observable<Equipe[]> {
-    let params = new HttpParams();
-    if (setorId != null) {
-      params = params.set('setorId', setorId);
+  importarShapefile(params: {
+    setorId: number;
+    arquivo: File;
+    atributoRua?: string;
+    atributoCodigo?: string;
+  }): Observable<TrechoImportacao> {
+    const body = new FormData();
+    body.append('setorId', String(params.setorId));
+    body.append('arquivo', params.arquivo);
+    if (params.atributoRua?.trim()) {
+      body.append('atributoRua', params.atributoRua.trim());
     }
-    return this.http.get<Equipe[]>(`${this.base}/equipes`, { params });
-  }
-
-  buscarEquipe(id: number): Observable<Equipe> {
-    return this.http.get<Equipe>(`${this.base}/equipes/${id}`);
-  }
-
-  criarEquipe(request: EquipeRequest): Observable<Equipe> {
-    return this.http.post<Equipe>(`${this.base}/equipes`, request);
-  }
-
-  atualizarEquipe(id: number, request: EquipeRequest): Observable<Equipe> {
-    return this.http.put<Equipe>(`${this.base}/equipes/${id}`, request);
-  }
-
-  desativarEquipe(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/equipes/${id}`);
-  }
-
-  listarColaboradores(equipeId?: number): Observable<Colaborador[]> {
-    let params = new HttpParams();
-    if (equipeId != null) {
-      params = params.set('equipeId', equipeId);
+    if (params.atributoCodigo?.trim()) {
+      body.append('atributoCodigo', params.atributoCodigo.trim());
     }
-    return this.http.get<Colaborador[]>(`${this.base}/colaboradores`, { params });
+    return this.http.post<TrechoImportacao>(`${this.base}/trechos/importar-shapefile`, body);
+  }
+
+  listarColaboradores(): Observable<Colaborador[]> {
+    return this.http.get<Colaborador[]>(`${this.base}/colaboradores`);
   }
 
   buscarColaborador(id: number): Observable<Colaborador> {
@@ -180,12 +173,8 @@ export class CadastrosOperacionaisApiService {
     return this.http.delete<void>(`${this.base}/colaboradores/${id}`);
   }
 
-  listarEquipamentos(equipeId?: number): Observable<Equipamento[]> {
-    let params = new HttpParams();
-    if (equipeId != null) {
-      params = params.set('equipeId', equipeId);
-    }
-    return this.http.get<Equipamento[]>(`${this.base}/equipamentos`, { params });
+  listarEquipamentos(): Observable<Equipamento[]> {
+    return this.http.get<Equipamento[]>(`${this.base}/equipamentos`);
   }
 
   buscarEquipamento(id: number): Observable<Equipamento> {
@@ -207,8 +196,8 @@ export class CadastrosOperacionaisApiService {
   listarEscalas(filtros?: {
     data?: string;
     setorId?: number;
-    equipeId?: number;
     status?: StatusEscala;
+    tipo?: TipoEscala;
   }): Observable<Escala[]> {
     let params = new HttpParams();
     if (filtros?.data) {
@@ -217,11 +206,11 @@ export class CadastrosOperacionaisApiService {
     if (filtros?.setorId != null) {
       params = params.set('setorId', filtros.setorId);
     }
-    if (filtros?.equipeId != null) {
-      params = params.set('equipeId', filtros.equipeId);
-    }
     if (filtros?.status) {
       params = params.set('status', filtros.status);
+    }
+    if (filtros?.tipo) {
+      params = params.set('tipo', filtros.tipo);
     }
     return this.http.get<Escala[]>(`${this.base}/escalas`, { params });
   }
@@ -276,7 +265,6 @@ export class CadastrosOperacionaisApiService {
   listarOcorrencias(filtros?: {
     data?: string;
     setorId?: number;
-    equipeId?: number;
     status?: StatusOcorrencia;
     tipo?: TipoOcorrencia;
   }): Observable<Ocorrencia[]> {
@@ -286,9 +274,6 @@ export class CadastrosOperacionaisApiService {
     }
     if (filtros?.setorId != null) {
       params = params.set('setorId', filtros.setorId);
-    }
-    if (filtros?.equipeId != null) {
-      params = params.set('equipeId', filtros.equipeId);
     }
     if (filtros?.status) {
       params = params.set('status', filtros.status);

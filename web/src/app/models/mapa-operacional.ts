@@ -33,8 +33,7 @@ export interface MapaAtivo {
   escalaId: number;
   equipamentoId: number;
   equipamentoCodigo: string;
-  equipeId: number;
-  equipeNome: string;
+  colaboradoresNomes: string;
   setorId: number;
   setorNome: string;
   turno: Turno;
@@ -55,8 +54,7 @@ export interface MapaTrecho {
   ruaNome: string;
   setorId: number;
   setorNome: string;
-  equipeId: number;
-  equipeNome: string;
+  colaboradoresNomes: string;
   ordem: number;
   status: StatusTrecho;
   percentualExecutado: number;

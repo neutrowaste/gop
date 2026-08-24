@@ -98,7 +98,7 @@ public class CoberturaTrechoService {
 		);
 		posicao.setValido(true);
 
-		atualizarCobertura(empresaId, empresa, escala, execucao, posicao.getProgressoLinear());
+		atualizarCobertura(empresaId, empresa, escala, equipamento, execucao, posicao.getProgressoLinear());
 		ocorrenciaService.resolverAutomaticamenteGpsSilencioso(escala.getId(), equipamento.getId());
 		return true;
 	}
@@ -107,6 +107,7 @@ public class CoberturaTrechoService {
 		Long empresaId,
 		Empresa empresa,
 		Escala escala,
+		Equipamento equipamento,
 		TrechoExecucao execucao,
 		Float progressoLinear
 	) {
@@ -151,7 +152,7 @@ public class CoberturaTrechoService {
 				execucao.getTrecho().getId(),
 				execucao.getPercentualExecutado()
 			);
-			validarOrdemDoPlano(empresa, escala, execucao);
+			validarOrdemDoPlano(empresa, escala, equipamento, execucao);
 			return;
 		}
 		if (statusAnterior == StatusTrecho.PLANEJADO) {
@@ -168,7 +169,7 @@ public class CoberturaTrechoService {
 	 * intacta, ou seja, existe trecho pendente tanto antes quanto depois do
 	 * que acabou de ser concluído.
 	 */
-	private void validarOrdemDoPlano(Empresa empresa, Escala escala, TrechoExecucao concluido) {
+	private void validarOrdemDoPlano(Empresa empresa, Escala escala, Equipamento equipamento, TrechoExecucao concluido) {
 		int ordem = concluido.getOrdem();
 		List<TrechoExecucao> antes = trechoExecucaoRepository.findByEscalaIdAndOrdemLessThanAndAtivoTrue(
 			escala.getId(),
@@ -181,7 +182,7 @@ public class CoberturaTrechoService {
 		boolean todosAntesConcluidos = antes.stream().allMatch(CoberturaTrechoService::estaConcluido);
 		boolean todosDepoisConcluidos = depois.stream().allMatch(CoberturaTrechoService::estaConcluido);
 		if (!todosAntesConcluidos && !todosDepoisConcluidos) {
-			ocorrenciaService.criarOrdemViolada(empresa, escala, concluido);
+			ocorrenciaService.criarOrdemViolada(empresa, escala, equipamento, concluido);
 		}
 	}
 
@@ -197,7 +198,7 @@ public class CoberturaTrechoService {
 	 */
 	private Optional<Escala> resolverEscalaPublicada(Long empresaId, Long equipamentoId, Instant capturadoEm) {
 		LocalDate data = capturadoEm.atZone(ZoneOffset.UTC).toLocalDate();
-		List<Escala> escalas = escalaRepository.findByEmpresaIdAndEquipamentoIdAndDataAndStatusAndAtivoTrue(
+		List<Escala> escalas = escalaRepository.findPublicadasDoAtivoNoDia(
 			empresaId,
 			equipamentoId,
 			data,

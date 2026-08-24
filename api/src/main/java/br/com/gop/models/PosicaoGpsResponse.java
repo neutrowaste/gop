@@ -17,6 +17,13 @@ public record PosicaoGpsResponse(
 	Float distanciaEixoMetros,
 	Float progressoLinear,
 	boolean valido,
-	boolean escalaEncontrada
+	boolean escalaEncontrada,
+	Float direcaoGraus,
+	Float altitudeMetros,
+	Long odometro,
+	Integer satelites,
+	Long rd,
+	String situacao,
+	FonteGps fonte
 ) {
 }

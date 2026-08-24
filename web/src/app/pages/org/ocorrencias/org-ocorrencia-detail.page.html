@@ -9,7 +9,7 @@
         <p class="text-xs uppercase tracking-[0.24em] text-navy-600">Ocorrência</p>
         <h2 class="mt-2 text-2xl font-semibold tracking-tight">{{ tipoLabels[item.tipo] }}</h2>
         <p class="mt-1 text-sm text-slate-500">
-          {{ item.escalaData }} · {{ item.setorNome }} · {{ item.equipeNome }} · {{ item.equipamentoCodigo }}
+          {{ item.escalaData }} · {{ item.setorNome }} · {{ item.colaboradoresNomes || '—' }} · {{ item.equipamentoCodigo }}
         </p>
       </div>
       <div class="flex flex-col items-end gap-2">
@@ -76,7 +76,7 @@
               formControlName="observacao"
               rows="3"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
-              placeholder="Ex.: equipe reprogramou a rota por bloqueio na via"
+              placeholder="Ex.: operação reprogramou a rota por bloqueio na via"
             ></textarea>
           </div>
           <div class="flex flex-wrap gap-2">

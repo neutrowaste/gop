@@ -6,25 +6,24 @@ import br.com.gop.models.ColaboradorRequest;
 import br.com.gop.models.ColaboradorResponse;
 import br.com.gop.models.EquipamentoRequest;
 import br.com.gop.models.EquipamentoResponse;
-import br.com.gop.models.EquipeRequest;
-import br.com.gop.models.EquipeResponse;
-import br.com.gop.models.RuaRequest;
-import br.com.gop.models.RuaResponse;
+import br.com.gop.models.SetorDemarcacaoPreviewResponse;
+import br.com.gop.models.SetorDemarcacaoRequest;
 import br.com.gop.models.SetorRequest;
 import br.com.gop.models.SetorResponse;
+import br.com.gop.models.TrechoDesenhoRequest;
+import br.com.gop.models.TrechoImportacaoResponse;
 import br.com.gop.models.TrechoRequest;
 import br.com.gop.models.TrechoResponse;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.CidadeService;
 import br.com.gop.services.ColaboradorService;
 import br.com.gop.services.EquipamentoService;
-import br.com.gop.services.EquipeService;
-import br.com.gop.services.RuaService;
 import br.com.gop.services.SetorService;
 import br.com.gop.services.TrechoService;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,12 +35,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 /**
- * Cadastros operacionais da Fase 1 (escopo empresa).
- * Shapefile e Frequência ficam para fatias seguintes.
+ * Cadastros operacionais da empresa (setor, trecho, colaborador, lutocar).
+ * Importação de shapefile: ZIP com .shp/.shx/.dbf, atributo RUA no feature.
  */
 @RestController
 @RequestMapping("/v1/org")
@@ -51,26 +51,20 @@ public class CadastrosOperacionaisController {
 
 	private final CidadeService cidadeService;
 	private final SetorService setorService;
-	private final RuaService ruaService;
 	private final TrechoService trechoService;
-	private final EquipeService equipeService;
 	private final ColaboradorService colaboradorService;
 	private final EquipamentoService equipamentoService;
 
 	public CadastrosOperacionaisController(
 		CidadeService cidadeService,
 		SetorService setorService,
-		RuaService ruaService,
 		TrechoService trechoService,
-		EquipeService equipeService,
 		ColaboradorService colaboradorService,
 		EquipamentoService equipamentoService
 	) {
 		this.cidadeService = cidadeService;
 		this.setorService = setorService;
-		this.ruaService = ruaService;
 		this.trechoService = trechoService;
-		this.equipeService = equipeService;
 		this.colaboradorService = colaboradorService;
 		this.equipamentoService = equipamentoService;
 	}
@@ -102,8 +96,11 @@ public class CadastrosOperacionaisController {
 	}
 
 	@GetMapping("/setores")
-	public List<SetorResponse> listarSetores(@RequestParam(required = false) Long cidadeId) {
-		return setorService.listar(empresaId(), cidadeId);
+	public List<SetorResponse> listarSetores(
+		@RequestParam(required = false) Long cidadeId,
+		@RequestParam(required = false) Long moduloId
+	) {
+		return setorService.listar(empresaId(), cidadeId, moduloId);
 	}
 
 	@GetMapping("/setores/{id}")
@@ -127,35 +124,39 @@ public class CadastrosOperacionaisController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/ruas")
-	public List<RuaResponse> listarRuas(@RequestParam(required = false) Long cidadeId) {
-		return ruaService.listar(empresaId(), cidadeId);
+	@PostMapping(value = "/setores/shapefile-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public SetorDemarcacaoPreviewResponse preVisualizarShapefileSetor(
+		@RequestParam("arquivo") MultipartFile arquivo,
+		@RequestParam(required = false) String charset
+	) {
+		return setorService.preVisualizarShapefile(empresaId(), arquivo, charset);
 	}
 
-	@GetMapping("/ruas/{id}")
-	public RuaResponse buscarRua(@PathVariable Long id) {
-		return ruaService.buscar(empresaId(), id);
+	@PostMapping(value = "/setores/{id}/shapefile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public SetorResponse importarShapefileSetor(
+		@PathVariable Long id,
+		@RequestParam("arquivo") MultipartFile arquivo,
+		@RequestParam(required = false) String charset
+	) {
+		return setorService.importarShapefile(empresaId(), id, arquivo, charset);
 	}
 
-	@PostMapping("/ruas")
-	public ResponseEntity<RuaResponse> criarRua(@Valid @RequestBody RuaRequest request) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(ruaService.criar(empresaId(), request));
+	@PutMapping("/setores/{id}/demarcacao")
+	public SetorResponse atualizarDemarcacaoSetor(
+		@PathVariable Long id,
+		@Valid @RequestBody SetorDemarcacaoRequest request
+	) {
+		return setorService.atualizarDemarcacao(empresaId(), id, request.geomWkt());
 	}
 
-	@PutMapping("/ruas/{id}")
-	public RuaResponse atualizarRua(@PathVariable Long id, @Valid @RequestBody RuaRequest request) {
-		return ruaService.atualizar(empresaId(), id, request);
-	}
-
-	@DeleteMapping("/ruas/{id}")
-	public ResponseEntity<Void> desativarRua(@PathVariable Long id) {
-		ruaService.desativar(empresaId(), id);
-		return ResponseEntity.noContent().build();
+	@DeleteMapping("/setores/{id}/shapefile")
+	public SetorResponse removerShapefileSetor(@PathVariable Long id) {
+		return setorService.removerDemarcacao(empresaId(), id);
 	}
 
 	@GetMapping("/trechos")
-	public List<TrechoResponse> listarTrechos(@RequestParam(required = false) Long ruaId) {
-		return trechoService.listar(empresaId(), ruaId);
+	public List<TrechoResponse> listarTrechos(@RequestParam(required = false) Long setorId) {
+		return trechoService.listar(empresaId(), setorId);
 	}
 
 	@GetMapping("/trechos/{id}")
@@ -166,6 +167,22 @@ public class CadastrosOperacionaisController {
 	@PostMapping("/trechos")
 	public ResponseEntity<TrechoResponse> criarTrecho(@Valid @RequestBody TrechoRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(trechoService.criar(empresaId(), request));
+	}
+
+	@PostMapping("/trechos/desenho")
+	public TrechoImportacaoResponse criarTrechosDesenho(@Valid @RequestBody TrechoDesenhoRequest request) {
+		return trechoService.criarDesenho(empresaId(), request);
+	}
+
+	@PostMapping(value = "/trechos/importar-shapefile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public TrechoImportacaoResponse importarShapefile(
+		@RequestParam Long setorId,
+		@RequestParam("arquivo") MultipartFile arquivo,
+		@RequestParam(required = false) String atributoRua,
+		@RequestParam(required = false) String atributoCodigo,
+		@RequestParam(required = false) String charset
+	) {
+		return trechoService.importarShapefile(empresaId(), setorId, arquivo, atributoRua, atributoCodigo, charset);
 	}
 
 	@PutMapping("/trechos/{id}")
@@ -179,35 +196,9 @@ public class CadastrosOperacionaisController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/equipes")
-	public List<EquipeResponse> listarEquipes(@RequestParam(required = false) Long setorId) {
-		return equipeService.listar(empresaId(), setorId);
-	}
-
-	@GetMapping("/equipes/{id}")
-	public EquipeResponse buscarEquipe(@PathVariable Long id) {
-		return equipeService.buscar(empresaId(), id);
-	}
-
-	@PostMapping("/equipes")
-	public ResponseEntity<EquipeResponse> criarEquipe(@Valid @RequestBody EquipeRequest request) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(equipeService.criar(empresaId(), request));
-	}
-
-	@PutMapping("/equipes/{id}")
-	public EquipeResponse atualizarEquipe(@PathVariable Long id, @Valid @RequestBody EquipeRequest request) {
-		return equipeService.atualizar(empresaId(), id, request);
-	}
-
-	@DeleteMapping("/equipes/{id}")
-	public ResponseEntity<Void> desativarEquipe(@PathVariable Long id) {
-		equipeService.desativar(empresaId(), id);
-		return ResponseEntity.noContent().build();
-	}
-
 	@GetMapping("/colaboradores")
-	public List<ColaboradorResponse> listarColaboradores(@RequestParam(required = false) Long equipeId) {
-		return colaboradorService.listar(empresaId(), equipeId);
+	public List<ColaboradorResponse> listarColaboradores() {
+		return colaboradorService.listar(empresaId());
 	}
 
 	@GetMapping("/colaboradores/{id}")
@@ -238,8 +229,8 @@ public class CadastrosOperacionaisController {
 	}
 
 	@GetMapping("/equipamentos")
-	public List<EquipamentoResponse> listarEquipamentos(@RequestParam(required = false) Long equipeId) {
-		return equipamentoService.listar(empresaId(), equipeId);
+	public List<EquipamentoResponse> listarEquipamentos() {
+		return equipamentoService.listar(empresaId());
 	}
 
 	@GetMapping("/equipamentos/{id}")

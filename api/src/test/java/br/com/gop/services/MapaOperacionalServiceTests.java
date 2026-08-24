@@ -1,13 +1,12 @@
 package br.com.gop.services;
 
+import br.com.gop.models.Colaborador;
 import br.com.gop.models.Empresa;
 import br.com.gop.models.Equipamento;
-import br.com.gop.models.Equipe;
 import br.com.gop.models.Escala;
 import br.com.gop.models.GeoJsonGeometry;
 import br.com.gop.models.MapaOperacionalResponse;
 import br.com.gop.models.PosicaoGps;
-import br.com.gop.models.Rua;
 import br.com.gop.models.Setor;
 import br.com.gop.models.SituacaoSinal;
 import br.com.gop.models.StatusEscala;
@@ -90,7 +89,7 @@ class MapaOperacionalServiceTests {
 		when(escalaRepository.findByEmpresaIdAndDataAndStatusAndAtivoTrue(EMPRESA_ID, HOJE, StatusEscala.PUBLICADA))
 			.thenReturn(List.of(escala));
 		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
-			EMPRESA_ID, escala.getEquipamento().getId()
+			EMPRESA_ID, equipamentoDa(escala).getId()
 		)).thenReturn(Optional.empty());
 		when(trechoExecucaoRepository.findByEscalaIdAndAtivoTrueOrderByOrdemAsc(escala.getId()))
 			.thenReturn(List.of());
@@ -109,7 +108,7 @@ class MapaOperacionalServiceTests {
 		when(escalaRepository.findByEmpresaIdAndDataAndStatusAndAtivoTrue(EMPRESA_ID, HOJE, StatusEscala.PUBLICADA))
 			.thenReturn(List.of(escala));
 		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
-			EMPRESA_ID, escala.getEquipamento().getId()
+			EMPRESA_ID, equipamentoDa(escala).getId()
 		)).thenReturn(Optional.empty());
 		when(trechoExecucaoRepository.findByEscalaIdAndAtivoTrueOrderByOrdemAsc(escala.getId()))
 			.thenReturn(List.of(execucao));
@@ -136,17 +135,17 @@ class MapaOperacionalServiceTests {
 			.thenReturn(List.of());
 
 		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
-			EMPRESA_ID, escala.getEquipamento().getId()
+			EMPRESA_ID, equipamentoDa(escala).getId()
 		)).thenReturn(Optional.of(posicao(Instant.now().minus(5, ChronoUnit.MINUTES))));
 		assertThat(service.obter(EMPRESA_ID, HOJE).ativos().get(0).situacaoSinal()).isEqualTo(SituacaoSinal.ONLINE);
 
 		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
-			EMPRESA_ID, escala.getEquipamento().getId()
+			EMPRESA_ID, equipamentoDa(escala).getId()
 		)).thenReturn(Optional.of(posicao(Instant.now().minus(45, ChronoUnit.MINUTES))));
 		assertThat(service.obter(EMPRESA_ID, HOJE).ativos().get(0).situacaoSinal()).isEqualTo(SituacaoSinal.ATENCAO);
 
 		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
-			EMPRESA_ID, escala.getEquipamento().getId()
+			EMPRESA_ID, equipamentoDa(escala).getId()
 		)).thenReturn(Optional.of(posicao(Instant.now().minus(90, ChronoUnit.MINUTES))));
 		assertThat(service.obter(EMPRESA_ID, HOJE).ativos().get(0).situacaoSinal()).isEqualTo(SituacaoSinal.OFFLINE);
 	}
@@ -162,14 +161,15 @@ class MapaOperacionalServiceTests {
 		setor.setId(1L);
 		setor.setNome("Setor 1");
 
-		Equipe equipe = new Equipe();
-		equipe.setId(1L);
-		equipe.setNome("Equipe 1");
-
 		Equipamento equipamento = new Equipamento();
 		equipamento.setId(1L);
 		equipamento.setCodigo("LUT-0001");
-		equipamento.setEquipe(equipe);
+
+		Colaborador colaborador = new Colaborador();
+		colaborador.setId(1L);
+		colaborador.setNome("João Silva");
+		colaborador.setMatricula("M-001");
+		colaborador.setEquipamento(equipamento);
 
 		Usuario supervisor = new Usuario();
 		supervisor.setId(1L);
@@ -181,22 +181,26 @@ class MapaOperacionalServiceTests {
 		escala.setData(HOJE);
 		escala.setTurno(Turno.MANHA);
 		escala.setSetor(setor);
-		escala.setEquipe(equipe);
-		escala.setEquipamento(equipamento);
+		escala.getColaboradores().add(colaborador);
 		escala.setSupervisor(supervisor);
 		escala.setStatus(StatusEscala.PUBLICADA);
 		escala.setAtivo(true);
 		return escala;
 	}
 
+	private Equipamento equipamentoDa(Escala escala) {
+		return escala.equipamentosDosColaboradores().iterator().next();
+	}
+
 	private Trecho trecho(Long id, String codigo, String wkt) {
-		Rua rua = new Rua();
-		rua.setId(1L);
-		rua.setNome("Rua Teste");
+		Setor setor = new Setor();
+		setor.setId(1L);
+		setor.setNome("Setor Teste");
 
 		Trecho trecho = new Trecho();
 		trecho.setId(id);
-		trecho.setRua(rua);
+		trecho.setSetor(setor);
+		trecho.setNomeRua("Rua Teste");
 		trecho.setCodigo(codigo);
 		trecho.setGeom(GeometriaWkt.lineStringDeWkt(wkt));
 		trecho.setAtivo(true);

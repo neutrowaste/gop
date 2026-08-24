@@ -32,12 +32,11 @@
       <i class="ph ph-map-trifold text-navy-700" aria-hidden="true"></i>
       Cadastros operacionais
     </h3>
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       @for (item of [
         { link: '/org/setores', label: 'Setores', icon: 'ph-map-trifold' },
-        { link: '/org/ruas', label: 'Ruas', icon: 'ph-road-horizon' },
         { link: '/org/trechos', label: 'Trechos', icon: 'ph-path' },
-        { link: '/org/equipes', label: 'Equipes', icon: 'ph-users-three' },
+        { link: '/org/equipes', label: 'Colaboradores', icon: 'ph-users-three' },
         { link: '/org/escalas', label: 'Escala', icon: 'ph-calendar-check' },
         { link: '/org/ocorrencias', label: 'Ocorrências', icon: 'ph-warning-circle' }
       ]; track item.link) {

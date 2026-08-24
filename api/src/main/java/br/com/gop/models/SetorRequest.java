@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record SetorRequest(
+	@NotNull Long moduloId,
 	@NotNull Long cidadeId,
 	@Size(max = 40) String codigo,
 	@NotBlank @Size(max = 200) String nome,

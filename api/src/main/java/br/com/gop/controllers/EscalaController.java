@@ -3,6 +3,7 @@ package br.com.gop.controllers;
 import br.com.gop.models.EscalaRequest;
 import br.com.gop.models.EscalaResponse;
 import br.com.gop.models.StatusEscala;
+import br.com.gop.models.TipoEscala;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.EscalaService;
 import jakarta.validation.Valid;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * Módulo Escala (RN-001): amarração diária obrigatória
- * Setor ↔ Equipe ↔ Ativo GPS ↔ Supervisor ↔ Turno.
+ * Setor ↔ Colaboradores (Lutocar designado) ↔ Supervisor ↔ Turno.
  * Pré-requisito do motor de regras da Varrição.
  */
 @RestController
@@ -45,10 +46,10 @@ public class EscalaController {
 	public List<EscalaResponse> listar(
 		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
 		@RequestParam(required = false) Long setorId,
-		@RequestParam(required = false) Long equipeId,
-		@RequestParam(required = false) StatusEscala status
+		@RequestParam(required = false) StatusEscala status,
+		@RequestParam(required = false) TipoEscala tipo
 	) {
-		return escalaService.listar(empresaId(), data, setorId, equipeId, status);
+		return escalaService.listar(empresaId(), data, setorId, status, tipo);
 	}
 
 	@GetMapping("/{id}")

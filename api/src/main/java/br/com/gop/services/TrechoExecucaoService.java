@@ -2,7 +2,6 @@ package br.com.gop.services;
 
 import br.com.gop.models.Empresa;
 import br.com.gop.models.Escala;
-import br.com.gop.models.StatusEscala;
 import br.com.gop.models.StatusTrecho;
 import br.com.gop.models.Trecho;
 import br.com.gop.models.TrechoExecucao;
@@ -20,10 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Plano diário de trechos+ordem dentro da Escala (RN-001). Só pode ser
- * editado enquanto a Escala está em RASCUNHO — depois de PUBLICADA, o motor
- * de cobertura passa a atualizar status/percentual, mas a composição do
- * plano (quais trechos, em que ordem) fica travada.
+ * Plano de trechos da Escala (RN-001). Editável na avulsa e no modelo de
+ * frequência enquanto a escala está ativa. Instância gerada pela frequência
+ * só exibe o progresso do dia — a composição se altera no modelo.
  */
 @Service
 @Profile("postgres")
@@ -68,6 +66,9 @@ public class TrechoExecucaoService {
 		if (!trecho.isAtivo()) {
 			throw new RegraNegocioException("Trecho informado está inativo");
 		}
+		if (!trecho.getSetor().getId().equals(escala.getSetor().getId())) {
+			throw new RegraNegocioException("Trecho não pertence ao setor desta escala");
+		}
 		if (trechoExecucaoRepository.existsByEscalaIdAndTrechoIdAndAtivoTrue(escalaId, trecho.getId())) {
 			throw new ConflitoNegocioException("Este trecho já está no plano desta escala");
 		}
@@ -97,6 +98,7 @@ public class TrechoExecucaoService {
 			trecho.getId(),
 			request.ordem()
 		);
+		replicarSeModeloFrequencia(escala);
 		return paraResponse(execucao);
 	}
 
@@ -116,6 +118,7 @@ public class TrechoExecucaoService {
 		execucao.setOrdem(request.ordem());
 		trechoExecucaoRepository.save(execucao);
 		LOGGER.info("Ordem do trecho no plano atualizada: execucaoId={}, novaOrdem={}", id, request.ordem());
+		replicarSeModeloFrequencia(execucao.getEscala());
 		return paraResponse(execucao);
 	}
 
@@ -134,6 +137,7 @@ public class TrechoExecucaoService {
 			Map.of("escalaId", escalaId, "trechoId", execucao.getTrecho().getId())
 		);
 		LOGGER.info("Trecho removido do plano: execucaoId={}, escalaId={}", id, escalaId);
+		replicarSeModeloFrequencia(execucao.getEscala());
 	}
 
 	@Transactional(readOnly = true)
@@ -142,11 +146,20 @@ public class TrechoExecucaoService {
 			.orElseThrow(() -> new RecursoNaoEncontradoException("Trecho não encontrado no plano desta escala"));
 	}
 
+	private void replicarSeModeloFrequencia(Escala escala) {
+		if (escala.isModeloFrequencia()) {
+			escalaService.replicarPlanoNaInstanciaDeHoje(escala);
+		}
+	}
+
 	private Escala escalaEditavel(Long empresaId, Long escalaId) {
 		Escala escala = escalaService.buscarEntidade(empresaId, escalaId);
-		if (escala.getStatus() != StatusEscala.RASCUNHO) {
+		if (!escala.isAtivo()) {
+			throw new RegraNegocioException("O plano de trechos não pode ser editado em escala cancelada");
+		}
+		if (escala.isInstanciaFrequencia()) {
 			throw new RegraNegocioException(
-				"O plano de trechos só pode ser editado enquanto a escala está em RASCUNHO"
+				"O plano desta escala veio da frequência. Edite os trechos no modelo recorrente"
 			);
 		}
 		return escala;
@@ -160,13 +173,17 @@ public class TrechoExecucaoService {
 		return empresa;
 	}
 
+	private static String nomeRua(Trecho trecho) {
+		return trecho.getNomeRua() == null ? "" : trecho.getNomeRua();
+	}
+
 	private TrechoExecucaoResponse paraResponse(TrechoExecucao execucao) {
 		return new TrechoExecucaoResponse(
 			execucao.getId(),
 			execucao.getEscala().getId(),
 			execucao.getTrecho().getId(),
 			execucao.getTrecho().getCodigo(),
-			execucao.getTrecho().getRua().getNome(),
+			nomeRua(execucao.getTrecho()),
 			execucao.getOrdem(),
 			execucao.getStatus(),
 			execucao.getPercentualExecutado(),

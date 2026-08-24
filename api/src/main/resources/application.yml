@@ -3,6 +3,10 @@ spring:
     name: gop-api
   # Para IDE/execução sem Maven: use --spring.profiles.active=postgres
   # (spring-boot:run já ativa postgres via pom.xml).
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
 
 server:
   port: 8080
@@ -31,6 +35,19 @@ logging:
     br.com.gop: INFO
     org.springframework.security: INFO
     org.hibernate.SQL: WARN
+
+gop:
+  rassystem:
+    base-url: ${RASSYSTEM_BASE_URL:https://backend.rassystem.com.br/app/v1/api}
+    login: tsilva2
+    senha: cra20262
+    id-filial: ${RASSYSTEM_ID_FILIAL:}
+    id-rotulo: ${RASSYSTEM_ID_ROTULO:}
+    id-tipo-servico: ${RASSYSTEM_ID_TIPO_SERVICO:}
+    empresa-id: ${RASSYSTEM_EMPRESA_ID:}
+    poller-enabled: ${RASSYSTEM_POLLER_ENABLED:false}
+    poll-interval-ms: ${RASSYSTEM_POLL_INTERVAL_MS:120000}
+
 
 ---
 # Sem profile postgres: sobe só a API (health) sem exigir PostgreSQL.

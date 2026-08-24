@@ -2,6 +2,7 @@ package br.com.gop.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
@@ -49,6 +50,29 @@ public class PosicaoGps extends BaseEntity {
 
 	@Column(name = "precisao_metros")
 	private Float precisaoMetros;
+
+	@Column(name = "direcao_graus")
+	private Float direcaoGraus;
+
+	@Column(name = "altitude_metros")
+	private Float altitudeMetros;
+
+	@Column(name = "odometro")
+	private Long odometro;
+
+	private Integer satelites;
+
+	private Long rd;
+
+	@Column(length = 40)
+	private String situacao;
+
+	@Enumerated(jakarta.persistence.EnumType.STRING)
+	@Column(name = "fonte", length = 20)
+	private FonteGps fonte = FonteGps.MANUAL;
+
+	@Column(name = "id_externo", length = 80)
+	private String idExterno;
 
 	/** Instante em que o dispositivo capturou a posição (informado no payload). */
 	@Column(name = "capturado_em", nullable = false)

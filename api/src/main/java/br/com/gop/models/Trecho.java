@@ -18,8 +18,8 @@ import org.locationtech.jts.geom.LineString;
 import java.time.Instant;
 
 /**
- * Cadastro geo + campos de pré-auditoria (paridade Segment do legado).
- * Associação a escala/setor do dia entra na Fase 2 (Route).
+ * Segmento auditável do Setor. O nome da via ({@code nomeRua}) vem do
+ * shapefile (atributo RUA) ou do cadastro manual — não há entidade Rua.
  */
 @Getter
 @Setter
@@ -34,8 +34,12 @@ public class Trecho extends BaseEntity {
 	private Empresa empresa;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "rua_id", nullable = false)
-	private Rua rua;
+	@JoinColumn(name = "setor_id", nullable = false)
+	private Setor setor;
+
+	/** Nome do logradouro (shapefile RUA / cadastro manual). */
+	@Column(name = "nome_rua", length = 200)
+	private String nomeRua;
 
 	@Column(nullable = false, length = 80)
 	private String codigo;

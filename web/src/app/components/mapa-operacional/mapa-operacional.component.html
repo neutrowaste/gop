@@ -1,30 +1,55 @@
-<div class="relative h-[calc(100vh-220px)] min-h-[420px] w-full overflow-hidden rounded-xl border border-slate-200">
-  <div #mapaContainer class="absolute inset-0"></div>
+<div
+  class="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+  [ngClass]="
+    compacto ? 'h-full min-h-[240px]' : 'h-[calc(100vh-220px)] min-h-[420px]'
+  "
+>
+  <div #mapaContainer class="h-full w-full"></div>
 
-  <div class="absolute right-3 top-3 z-10 w-52 rounded-lg border border-slate-200 bg-white/95 p-3 text-xs shadow-lg">
-    <p class="mb-2 font-semibold uppercase tracking-wide text-slate-500">Trechos</p>
-    <ul class="mb-3 space-y-1">
-      @for (status of statusOpcoes; track status) {
+  <div
+    class="pointer-events-none absolute right-3 top-14 z-10 rounded-lg border border-slate-200 bg-white/95 text-xs shadow-lg"
+    [class.w-52]="!compacto"
+    [class.p-3]="!compacto"
+    [class.w-40]="compacto"
+    [class.p-2]="compacto"
+  >
+    <div class="pointer-events-auto">
+      <p class="mb-2 font-semibold uppercase tracking-wide text-slate-500">Trechos</p>
+      <ul class="mb-3 space-y-1">
+        @for (status of statusOpcoes; track status) {
+          <li class="flex items-center gap-2">
+            <span
+              class="h-2.5 w-2.5 shrink-0 rounded-full"
+              [style.background-color]="statusCores[status]"
+            ></span>
+            <span class="text-slate-600">{{ status }}</span>
+          </li>
+        }
+      </ul>
+      <p class="mb-2 font-semibold uppercase tracking-wide text-slate-500">Ativos</p>
+      <ul class="space-y-1">
         <li class="flex items-center gap-2">
-          <span class="h-2.5 w-2.5 shrink-0 rounded-full" [style.background-color]="statusCores[status]"></span>
-          <span class="text-slate-600">{{ status }}</span>
+          <span
+            class="h-2.5 w-2.5 shrink-0 rounded-full"
+            [style.background-color]="situacaoCores.ONLINE"
+          ></span>
+          <span class="text-slate-600">{{ situacaoLabels.ONLINE }}</span>
         </li>
-      }
-    </ul>
-    <p class="mb-2 font-semibold uppercase tracking-wide text-slate-500">Ativos</p>
-    <ul class="space-y-1">
-      <li class="flex items-center gap-2">
-        <span class="h-2.5 w-2.5 shrink-0 rounded-full" [style.background-color]="situacaoCores.ONLINE"></span>
-        <span class="text-slate-600">{{ situacaoLabels.ONLINE }}</span>
-      </li>
-      <li class="flex items-center gap-2">
-        <span class="h-2.5 w-2.5 shrink-0 rounded-full" [style.background-color]="situacaoCores.ATENCAO"></span>
-        <span class="text-slate-600">{{ situacaoLabels.ATENCAO }}</span>
-      </li>
-      <li class="flex items-center gap-2">
-        <span class="h-2.5 w-2.5 shrink-0 rounded-full" [style.background-color]="situacaoCores.OFFLINE"></span>
-        <span class="text-slate-600">{{ situacaoLabels.OFFLINE }}</span>
-      </li>
-    </ul>
+        <li class="flex items-center gap-2">
+          <span
+            class="h-2.5 w-2.5 shrink-0 rounded-full"
+            [style.background-color]="situacaoCores.ATENCAO"
+          ></span>
+          <span class="text-slate-600">{{ situacaoLabels.ATENCAO }}</span>
+        </li>
+        <li class="flex items-center gap-2">
+          <span
+            class="h-2.5 w-2.5 shrink-0 rounded-full"
+            [style.background-color]="situacaoCores.OFFLINE"
+          ></span>
+          <span class="text-slate-600">{{ situacaoLabels.OFFLINE }}</span>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>

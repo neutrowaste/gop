@@ -7,10 +7,11 @@
       </p>
       <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Setores</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Setores da empresa (município informado no cadastro)
+        Cada setor pertence a um serviço contratado. O código pode se repetir entre serviços, mas
+        não dentro do mesmo serviço.
       </p>
     </div>
-    <button type="button" class="admin-btn-primary" (click)="abrirForm()">
+    <button type="button" class="admin-btn-primary" (click)="abrirForm()" [disabled]="servicos().length === 0">
       <i class="ph ph-plus" aria-hidden="true"></i>
       Novo setor
     </button>
@@ -20,12 +21,42 @@
     <div class="admin-alert-error mb-4">{{ mensagem }}</div>
   }
 
+  @if (servicos().length === 0) {
+    <div class="admin-alert-error mb-4">
+      Nenhum serviço contratado. A plataforma precisa habilitar um módulo para esta empresa antes de
+      cadastrar setores.
+    </div>
+  }
+
+  <form class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4" [formGroup]="filtro">
+    <div class="space-y-1">
+      <label class="text-xs font-medium text-slate-500" for="filtroServico">Serviço</label>
+      <select id="filtroServico" formControlName="moduloId" class="admin-input">
+        <option [ngValue]="0">Todos</option>
+        @for (servico of servicos(); track servico.moduloId) {
+          <option [ngValue]="servico.moduloId">{{ servico.nome }}</option>
+        }
+      </select>
+    </div>
+  </form>
+
   @if (mostrarForm()) {
-    <form class="admin-card mb-6 grid max-w-xl gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
+    <div class="mb-6 grid items-stretch gap-4 xl:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]">
+    <form class="admin-card grid gap-3 p-5" [formGroup]="form" (ngSubmit)="criar()">
       <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-800">
         <i class="ph ph-plus-circle text-navy-700" aria-hidden="true"></i>
         Novo setor
       </h3>
+
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="moduloId">Serviço</label>
+        <select id="moduloId" formControlName="moduloId" class="admin-input">
+          <option [ngValue]="0" disabled>Selecione</option>
+          @for (servico of servicos(); track servico.moduloId) {
+            <option [ngValue]="servico.moduloId">{{ servico.nome }}</option>
+          }
+        </select>
+      </div>
 
       @if (!novaCidade() && cidades().length > 0) {
         <div class="space-y-1">
@@ -72,12 +103,37 @@
       }
 
       <div class="space-y-1">
-        <label class="text-xs font-medium text-slate-500" for="codigo">Código (opcional)</label>
-        <input id="codigo" formControlName="codigo" class="admin-input" />
+        <label class="text-xs font-medium text-slate-500" for="codigo">Código</label>
+        <input id="codigo" formControlName="codigo" class="admin-input" placeholder="Ex.: DFA001" />
+        <p class="text-xs text-slate-400">Único dentro do serviço selecionado</p>
       </div>
       <div class="space-y-1">
         <label class="text-xs font-medium text-slate-500" for="nome">Nome do setor</label>
         <input id="nome" formControlName="nome" class="admin-input" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-medium text-slate-500" for="shapefileSetor">Demarcação (opcional)</label>
+        <input
+          id="shapefileSetor"
+          type="file"
+          accept=".zip,application/zip"
+          class="admin-input"
+          (change)="onArquivoSelecionado($event)"
+        />
+        <p class="text-xs text-slate-400">
+          Opcional. Confirme o polígono no mapa ou envie um ZIP. Não é necessário para operação por
+          trechos.
+        </p>
+        
+        @if (previewandoShapefile()) {
+          <p class="text-xs text-slate-500">Lendo shapefile no mapa…</p>
+        }
+        @if (poligonoWkt()) {
+          <p class="text-xs font-medium text-navy-700">Polígono confirmado no mapa</p>
+        }
+        @if (arquivoShapefile(); as arquivo) {
+          <p class="text-xs text-slate-500">{{ arquivo.name }}</p>
+        }
       </div>
       <div class="flex flex-wrap gap-2 pt-1">
         <button type="submit" class="admin-btn-primary" [disabled]="salvando()">
@@ -87,6 +143,13 @@
         <button type="button" class="admin-btn-secondary" (click)="fecharForm()">Cancelar</button>
       </div>
     </form>
+    <app-editor-poligono-setor
+      [geomWkt]="poligonoWkt()"
+      [geomGeoJson]="geomPreview()"
+      (confirmado)="onPoligonoConfirmado($event)"
+      (limpo)="onPoligonoLimpo()"
+    />
+    </div>
   }
 
   @if (carregando()) {
@@ -102,7 +165,9 @@
         <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 font-medium">Setor</th>
+            <th class="px-4 py-3 font-medium">Serviço</th>
             <th class="px-4 py-3 font-medium">Município</th>
+            <th class="px-4 py-3 font-medium">Demarcação</th>
             <th class="px-4 py-3 font-medium">Status</th>
             <th class="px-4 py-3 font-medium"></th>
           </tr>
@@ -116,7 +181,15 @@
                   <p class="font-mono text-xs text-slate-500">{{ setor.codigo }}</p>
                 }
               </td>
+              <td class="px-4 py-3 text-slate-500">{{ setor.moduloNome }}</td>
               <td class="px-4 py-3 text-slate-500">{{ setor.cidadeNome }}</td>
+              <td class="px-4 py-3">
+                @if (setor.temDemarcacao) {
+                  <span class="admin-badge-info">Área</span>
+                } @else {
+                  <span class="text-xs text-slate-400">Trechos</span>
+                }
+              </td>
               <td class="px-4 py-3">
                 @if (setor.ativo) {
                   <span class="admin-badge-ok">Ativo</span>

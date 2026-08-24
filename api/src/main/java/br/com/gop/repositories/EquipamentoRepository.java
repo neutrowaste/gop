@@ -10,13 +10,19 @@ public interface EquipamentoRepository extends JpaRepository<Equipamento, Long> 
 
 	List<Equipamento> findByEmpresaIdOrderByCodigoAsc(Long empresaId);
 
-	List<Equipamento> findByEmpresaIdAndEquipeIdOrderByCodigoAsc(Long empresaId, Long equipeId);
-
 	Optional<Equipamento> findByIdAndEmpresaId(Long id, Long empresaId);
 
 	boolean existsByEmpresaIdAndCodigoIgnoreCase(Long empresaId, String codigo);
 
 	boolean existsByEmpresaIdAndCodigoIgnoreCaseAndIdNot(Long empresaId, String codigo, Long id);
+
+	Optional<Equipamento> findByEmpresaIdAndCodigoIgnoreCase(Long empresaId, String codigo);
+
+	Optional<Equipamento> findByEmpresaIdAndCodigoExterno(Long empresaId, String codigoExterno);
+
+	boolean existsByEmpresaIdAndCodigoExternoAndIdNot(Long empresaId, String codigoExterno, Long id);
+
+	boolean existsByEmpresaIdAndCodigoExterno(Long empresaId, String codigoExterno);
 
 	long countByEmpresaIdAndAtivoTrue(Long empresaId);
 }

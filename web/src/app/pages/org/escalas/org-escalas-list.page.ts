@@ -1,25 +1,35 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
 import {
-  Equipamento,
-  Equipe,
+  Colaborador,
+  DIA_SEMANA_OPCOES,
+  DiaSemana,
   Escala,
   Setor,
-  StatusEscala,
+  TIPO_ESCALA_LABELS,
   TURNO_LABELS,
   TURNO_OPCOES,
+  TipoEscala,
+  Trecho,
   Turno,
+  rotuloSetor,
 } from '../../../models/cadastros-operacionais';
 import { OrganizacaoUsuario } from '../../../models/organizacao';
 import { CadastrosOperacionaisApiService } from '../../../services/cadastros-operacionais-api.service';
+import { hojeIso as hoje } from '../../../services/data-local';
 import { mensagemHttp } from '../../../services/http-erro';
 import { OrganizacaoApiService } from '../../../services/organizacao-api.service';
 
-function hoje(): string {
-  return new Date().toISOString().slice(0, 10);
+function minLengthArray(min: number) {
+  return (control: AbstractControl) => {
+    const valor = control.value as unknown;
+    return Array.isArray(valor) && valor.length >= min ? null : { minLengthArray: true };
+  };
 }
+
+export type VisaoEscala = 'dia' | 'frequencias';
 
 @Component({
   selector: 'app-org-escalas-list-page',
@@ -30,10 +40,15 @@ export class OrgEscalasListPage implements OnInit {
   private readonly api = inject(CadastrosOperacionaisApiService);
   private readonly orgApi = inject(OrganizacaoApiService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   readonly turnoOpcoes = TURNO_OPCOES;
   readonly turnoLabels = TURNO_LABELS;
+  readonly tipoLabels = TIPO_ESCALA_LABELS;
+  readonly diaSemanaOpcoes = DIA_SEMANA_OPCOES;
+  readonly rotuloSetor = rotuloSetor;
 
+  readonly visao = signal<VisaoEscala>('dia');
   readonly carregando = signal(true);
   readonly salvando = signal(false);
   readonly erro = signal<string | null>(null);
@@ -41,68 +56,59 @@ export class OrgEscalasListPage implements OnInit {
 
   readonly escalas = signal<Escala[]>([]);
   readonly setores = signal<Setor[]>([]);
-  readonly equipes = signal<Equipe[]>([]);
-  readonly equipamentos = signal<Equipamento[]>([]);
+  readonly colaboradores = signal<Colaborador[]>([]);
   readonly supervisores = signal<OrganizacaoUsuario[]>([]);
+  readonly trechosDoSetor = signal<Trecho[]>([]);
 
   readonly mostrarForm = signal(false);
 
   readonly filtro = this.fb.nonNullable.group({
     data: [hoje()],
     setorId: [0],
-    equipeId: [0],
-    status: ['' as StatusEscala | ''],
+    tipo: ['' as TipoEscala | ''],
   });
 
   readonly form = this.fb.nonNullable.group({
+    tipo: ['AVULSA' as TipoEscala, [Validators.required]],
     data: [hoje(), [Validators.required]],
+    diasSemana: this.fb.nonNullable.control<DiaSemana[]>([]),
     turno: ['MANHA' as Turno, [Validators.required]],
     setorId: [0, [Validators.required, Validators.min(1)]],
-    equipeId: [0, [Validators.required, Validators.min(1)]],
-    equipamentoId: [0, [Validators.required, Validators.min(1)]],
+    colaboradorIds: this.fb.nonNullable.control<number[]>([], minLengthArray(1)),
+    trechoIds: this.fb.nonNullable.control<number[]>([]),
     supervisorUsuarioId: [0, [Validators.required, Validators.min(1)]],
-  });
-
-  readonly equipesDoSetorForm = computed(() => {
-    const setorId = this.form.controls.setorId.value;
-    return this.equipes().filter((e) => e.ativo && (!setorId || e.setorId === setorId));
-  });
-
-  readonly equipamentosDaEquipeForm = computed(() => {
-    const equipeId = this.form.controls.equipeId.value;
-    return this.equipamentos().filter((e) => e.ativo && (!equipeId || e.equipeId === equipeId));
-  });
-
-  readonly equipesDoSetorFiltro = computed(() => {
-    const setorId = this.filtro.controls.setorId.value;
-    return this.equipes().filter((e) => !setorId || e.setorId === setorId);
   });
 
   ngOnInit(): void {
     this.carregarBases();
     this.carregar();
 
-    this.filtro.controls.setorId.valueChanges.subscribe(() => {
-      this.filtro.controls.equipeId.setValue(0);
-      this.carregar();
+    this.filtro.controls.setorId.valueChanges.subscribe(() => this.carregar());
+    this.filtro.controls.tipo.valueChanges.subscribe(() => this.carregar());
+    this.filtro.controls.data.valueChanges.subscribe(() => {
+      if (this.visao() === 'dia') {
+        this.carregar();
+      }
     });
-    this.filtro.controls.equipeId.valueChanges.subscribe(() => this.carregar());
-    this.filtro.controls.status.valueChanges.subscribe(() => this.carregar());
-    this.filtro.controls.data.valueChanges.subscribe(() => this.carregar());
+    this.form.controls.tipo.valueChanges.subscribe((tipo) => this.aplicarValidadoresTipo(tipo));
+    this.form.controls.setorId.valueChanges.subscribe((setorId) => this.carregarTrechosDoSetor(Number(setorId)));
+  }
 
-    this.form.controls.setorId.valueChanges.subscribe(() => {
-      this.form.controls.equipeId.setValue(0);
-      this.form.controls.equipamentoId.setValue(0);
-    });
-    this.form.controls.equipeId.valueChanges.subscribe(() => {
-      this.form.controls.equipamentoId.setValue(0);
-    });
+  mostrarDia(): void {
+    this.visao.set('dia');
+    this.carregar();
+  }
+
+  mostrarFrequencias(): void {
+    this.visao.set('frequencias');
+    this.carregar();
   }
 
   carregarBases(): void {
     this.api.listarSetores().subscribe({ next: (lista) => this.setores.set(lista.filter((s) => s.ativo)) });
-    this.api.listarEquipes().subscribe({ next: (lista) => this.equipes.set(lista) });
-    this.api.listarEquipamentos().subscribe({ next: (lista) => this.equipamentos.set(lista) });
+    this.api.listarColaboradores().subscribe({
+      next: (lista) => this.colaboradores.set(lista.filter((c) => c.ativo)),
+    });
     this.orgApi.listarUsuarios().subscribe({
       next: (lista) => this.supervisores.set(lista.filter((u) => u.ativo)),
     });
@@ -112,12 +118,12 @@ export class OrgEscalasListPage implements OnInit {
     this.carregando.set(true);
     this.erro.set(null);
     const raw = this.filtro.getRawValue();
+    const frequencias = this.visao() === 'frequencias';
     this.api
       .listarEscalas({
-        data: raw.data || undefined,
+        data: frequencias ? undefined : raw.data || undefined,
         setorId: raw.setorId || undefined,
-        equipeId: raw.equipeId || undefined,
-        status: raw.status || undefined,
+        tipo: frequencias ? 'FREQUENCIA' : raw.tipo || undefined,
       })
       .subscribe({
         next: (lista) => {
@@ -132,23 +138,98 @@ export class OrgEscalasListPage implements OnInit {
   }
 
   limparFiltros(): void {
-    this.filtro.reset({ data: '', setorId: 0, equipeId: 0, status: '' });
+    this.filtro.reset({ data: this.visao() === 'dia' ? hoje() : '', setorId: 0, tipo: '' });
+    this.carregar();
   }
 
   abrirForm(): void {
+    const tipoInicial: TipoEscala = this.visao() === 'frequencias' ? 'FREQUENCIA' : 'AVULSA';
     this.form.reset({
+      tipo: tipoInicial,
       data: this.filtro.controls.data.value || hoje(),
+      diasSemana: [],
       turno: 'MANHA',
       setorId: this.setores()[0]?.id ?? 0,
-      equipeId: 0,
-      equipamentoId: 0,
+      colaboradorIds: [],
+      trechoIds: [],
       supervisorUsuarioId: this.supervisores()[0]?.id ?? 0,
     });
+    this.aplicarValidadoresTipo(tipoInicial);
+    this.carregarTrechosDoSetor(Number(this.form.controls.setorId.value));
     this.mostrarForm.set(true);
   }
 
   fecharForm(): void {
     this.mostrarForm.set(false);
+  }
+
+  colaboradoresSelecionados(): number[] {
+    return this.form.controls.colaboradorIds.value;
+  }
+
+  todosColaboradoresSelecionados(): boolean {
+    const ativos = this.colaboradores();
+    return ativos.length > 0 && ativos.every((c) => this.colaboradoresSelecionados().includes(c.id));
+  }
+
+  toggleTodosColaboradores(marcado: boolean): void {
+    this.form.controls.colaboradorIds.setValue(marcado ? this.colaboradores().map((c) => c.id) : []);
+    this.form.controls.colaboradorIds.markAsTouched();
+  }
+
+  toggleColaborador(id: number, marcado: boolean): void {
+    const atual = this.colaboradoresSelecionados();
+    const proximo = marcado ? [...atual, id] : atual.filter((item) => item !== id);
+    this.form.controls.colaboradorIds.setValue([...new Set(proximo)]);
+    this.form.controls.colaboradorIds.markAsTouched();
+  }
+
+  trechosSelecionados(): number[] {
+    return this.form.controls.trechoIds.value;
+  }
+
+  todosTrechosSelecionados(): boolean {
+    const trechos = this.trechosDoSetor();
+    return trechos.length > 0 && trechos.every((t) => this.trechosSelecionados().includes(t.id));
+  }
+
+  toggleTodosTrechos(marcado: boolean): void {
+    this.form.controls.trechoIds.setValue(marcado ? this.trechosDoSetor().map((t) => t.id) : []);
+    this.form.controls.trechoIds.markAsTouched();
+  }
+
+  toggleTrecho(id: number, marcado: boolean): void {
+    const atual = this.trechosSelecionados();
+    const proximo = marcado ? [...atual, id] : atual.filter((item) => item !== id);
+    this.form.controls.trechoIds.setValue([...new Set(proximo)]);
+    this.form.controls.trechoIds.markAsTouched();
+  }
+
+  diasSelecionados(): DiaSemana[] {
+    return this.form.controls.diasSemana.value;
+  }
+
+  toggleDiaSemana(dia: DiaSemana, marcado: boolean): void {
+    const atual = this.diasSelecionados();
+    const proximo = marcado ? [...atual, dia] : atual.filter((item) => item !== dia);
+    this.form.controls.diasSemana.setValue([...new Set(proximo)]);
+    this.form.controls.diasSemana.markAsTouched();
+  }
+
+  nomesColaboradores(escala: Escala): string {
+    return escala.colaboradores.map((c) => c.nome).join(', ') || '—';
+  }
+
+  codigosLutocar(escala: Escala): string {
+    return [...new Set(escala.colaboradores.map((c) => c.equipamentoCodigo))].join(', ') || '—';
+  }
+
+  rotuloDias(escala: Escala): string {
+    if (!escala.diasSemana?.length) {
+      return '—';
+    }
+    const labels = new Map(this.diaSemanaOpcoes.map((d) => [d.valor, d.label]));
+    return escala.diasSemana.map((dia) => labels.get(dia) ?? dia).join(', ');
   }
 
   criar(): void {
@@ -160,27 +241,70 @@ export class OrgEscalasListPage implements OnInit {
     this.erro.set(null);
     this.ok.set(null);
     const raw = this.form.getRawValue();
+    const frequencia = raw.tipo === 'FREQUENCIA';
     this.api
       .criarEscala({
-        data: raw.data,
+        tipo: raw.tipo,
+        data: frequencia ? null : raw.data,
+        diasSemana: frequencia ? raw.diasSemana : [],
         turno: raw.turno,
         setorId: Number(raw.setorId),
-        equipeId: Number(raw.equipeId),
-        equipamentoId: Number(raw.equipamentoId),
+        colaboradorIds: raw.colaboradorIds,
+        trechoIds: raw.trechoIds,
         supervisorUsuarioId: Number(raw.supervisorUsuarioId),
         ativo: true,
       })
       .subscribe({
-        next: () => {
+        next: (escala) => {
           this.salvando.set(false);
           this.fecharForm();
-          this.ok.set('Escala criada em rascunho.');
-          this.carregar();
+          void this.router.navigate(['/org/escalas', escala.id]);
         },
         error: (erro: unknown) => {
           this.salvando.set(false);
           this.erro.set(mensagemHttp(erro, 'Falha ao criar escala'));
         },
       });
+  }
+
+  private aplicarValidadoresTipo(tipo: TipoEscala): void {
+    if (tipo === 'FREQUENCIA') {
+      this.form.controls.data.clearValidators();
+      this.form.controls.diasSemana.setValidators(minLengthArray(1));
+    } else {
+      this.form.controls.data.setValidators([Validators.required]);
+      this.form.controls.diasSemana.clearValidators();
+    }
+    this.form.controls.data.updateValueAndValidity({ emitEvent: false });
+    this.form.controls.diasSemana.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private carregarTrechosDoSetor(setorId: number): void {
+    this.form.controls.trechoIds.setValue([]);
+    if (!setorId) {
+      this.trechosDoSetor.set([]);
+      this.aplicarValidadorTrechos(false);
+      return;
+    }
+    this.api.listarTrechos(setorId).subscribe({
+      next: (lista) => {
+        const ativos = lista.filter((t) => t.ativo);
+        this.trechosDoSetor.set(ativos);
+        this.aplicarValidadorTrechos(ativos.length > 0);
+      },
+      error: () => {
+        this.trechosDoSetor.set([]);
+        this.aplicarValidadorTrechos(false);
+      },
+    });
+  }
+
+  private aplicarValidadorTrechos(obrigatorio: boolean): void {
+    if (obrigatorio) {
+      this.form.controls.trechoIds.setValidators(minLengthArray(1));
+    } else {
+      this.form.controls.trechoIds.clearValidators();
+    }
+    this.form.controls.trechoIds.updateValueAndValidity({ emitEvent: false });
   }
 }

@@ -1,9 +1,9 @@
 package br.com.gop.models;
 
 /**
- * Representação mínima de uma geometria GeoJSON (RFC 7946) usada apenas para
- * expor Point/LineString do PostGIS ao frontend (MapLibre GL). {@code coordinates}
- * é {@code double[]} para Point ou {@code double[][]} para LineString.
+ * Representação mínima de uma geometria GeoJSON (RFC 7946) para o frontend (MapLibre GL).
+ * {@code coordinates} é {@code double[]} (Point), {@code double[][]} (LineString),
+ * {@code double[][][]} (Polygon) ou {@code double[][][][]} (MultiPolygon).
  */
 public record GeoJsonGeometry(String type, Object coordinates) {
 }

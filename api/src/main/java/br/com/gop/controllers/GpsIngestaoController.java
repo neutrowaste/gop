@@ -15,10 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Ingestão de posições GPS (RN-001, fase 2: síncrona, autenticação JWT padrão).
- * TODO(fase de integração externa): autenticação dedicada por dispositivo
- * (API key / adaptador ACL para RasSystem, GPS próprio) substituirá o JWT de
- * usuário aqui — fora do escopo desta entrega, focada no motor de regras.
+ * Ingestão de posições GPS (RN-001).
+ * Fontes: POST manual, ACL RasSystem e, no futuro, GPS próprio — todas
+ * terminam em {@link br.com.gop.services.GpsIngestaoService}.
  */
 @RestController
 @RequestMapping("/v1/org/gps")

@@ -1,8 +1,8 @@
 package br.com.gop.services;
 
+import br.com.gop.models.Colaborador;
 import br.com.gop.models.Empresa;
 import br.com.gop.models.Equipamento;
-import br.com.gop.models.Equipe;
 import br.com.gop.models.Escala;
 import br.com.gop.models.PosicaoGps;
 import br.com.gop.models.Setor;
@@ -72,7 +72,7 @@ class SaudeGpsSchedulerTests {
 		verify(ocorrenciaService).criarGpsSilencioso(
 			eq(empresa),
 			eq(escala),
-			eq(escala.getEquipamento()),
+			eq(equipamentoDa(escala)),
 			org.mockito.ArgumentMatchers.longThat(minutos -> minutos >= 89)
 		);
 	}
@@ -120,14 +120,15 @@ class SaudeGpsSchedulerTests {
 		setor.setId(1L);
 		setor.setNome("Setor 1");
 
-		Equipe equipe = new Equipe();
-		equipe.setId(1L);
-		equipe.setNome("Equipe 1");
-
 		Equipamento equipamento = new Equipamento();
 		equipamento.setId(1L);
 		equipamento.setCodigo("LUT-0001");
-		equipamento.setEquipe(equipe);
+
+		Colaborador colaborador = new Colaborador();
+		colaborador.setId(1L);
+		colaborador.setNome("João Silva");
+		colaborador.setMatricula("M-001");
+		colaborador.setEquipamento(equipamento);
 
 		Usuario supervisor = new Usuario();
 		supervisor.setId(1L);
@@ -139,12 +140,15 @@ class SaudeGpsSchedulerTests {
 		escala.setData(LocalDate.now());
 		escala.setTurno(Turno.MANHA);
 		escala.setSetor(setor);
-		escala.setEquipe(equipe);
-		escala.setEquipamento(equipamento);
+		escala.getColaboradores().add(colaborador);
 		escala.setSupervisor(supervisor);
 		escala.setStatus(StatusEscala.PUBLICADA);
 		escala.setPublicadaEm(Instant.now().minus(5, ChronoUnit.HOURS));
 		escala.setAtivo(true);
 		return escala;
+	}
+
+	private Equipamento equipamentoDa(Escala escala) {
+		return escala.equipamentosDosColaboradores().iterator().next();
 	}
 }

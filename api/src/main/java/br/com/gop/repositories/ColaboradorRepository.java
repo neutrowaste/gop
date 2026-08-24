@@ -10,7 +10,7 @@ public interface ColaboradorRepository extends JpaRepository<Colaborador, Long> 
 
 	List<Colaborador> findByEmpresaIdOrderByNomeAsc(Long empresaId);
 
-	List<Colaborador> findByEmpresaIdAndEquipeIdOrderByNomeAsc(Long empresaId, Long equipeId);
+	List<Colaborador> findByEmpresaIdAndIdIn(Long empresaId, List<Long> ids);
 
 	Optional<Colaborador> findByIdAndEmpresaId(Long id, Long empresaId);
 

@@ -1,4 +1,4 @@
-<div class="flex min-h-screen bg-slate-50 text-slate-900">
+<div class="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
   <aside class="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
     <div class="border-b border-slate-200 px-5 py-5">
       <div class="flex items-center gap-2">
@@ -35,21 +35,13 @@
         <i class="ph ph-chart-pie-slice text-lg" aria-hidden="true"></i>
         Visão geral
       </a>
-      <a routerLink="/org/usuarios" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-users text-lg" aria-hidden="true"></i>
-        Usuários
-      </a>
 
       <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Operacional
+        Cadastros
       </p>
       <a routerLink="/org/setores" routerLinkActive="active" class="admin-nav-link">
         <i class="ph ph-map-trifold text-lg" aria-hidden="true"></i>
         Setores
-      </a>
-      <a routerLink="/org/ruas" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-road-horizon text-lg" aria-hidden="true"></i>
-        Ruas
       </a>
       <a routerLink="/org/trechos" routerLinkActive="active" class="admin-nav-link">
         <i class="ph ph-path text-lg" aria-hidden="true"></i>
@@ -57,12 +49,39 @@
       </a>
       <a routerLink="/org/equipes" routerLinkActive="active" class="admin-nav-link">
         <i class="ph ph-users-three text-lg" aria-hidden="true"></i>
-        Equipes
+        Colaboradores
       </a>
-      <a routerLink="/org/mapa" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-map-pin-line text-lg" aria-hidden="true"></i>
-        Mapa
+      <a routerLink="/org/usuarios" routerLinkActive="active" class="admin-nav-link">
+        <i class="ph ph-users text-lg" aria-hidden="true"></i>
+        Usuários
       </a>
+
+      <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        Serviços
+      </p>
+      @if (servicos().length === 0) {
+        <p class="px-3 py-2 text-xs leading-relaxed text-slate-400">
+          Nenhum serviço contratado para esta empresa.
+        </p>
+      } @else {
+        @for (servico of servicos(); track servico.moduloId) {
+          <a
+            [routerLink]="rotaServico(servico.codigo)"
+            class="admin-nav-link"
+            [class.active]="servicoAtivo(servico.codigo)"
+            (mouseenter)="abrirMenuServico(servico, $event)"
+            (mouseleave)="agendarFecharMenuServico()"
+          >
+            <i class="ph {{ iconeServico(servico.codigo) }} text-lg" aria-hidden="true"></i>
+            <span class="min-w-0 flex-1 truncate">{{ servico.nome }}</span>
+            <i class="ph ph-caret-right text-xs text-slate-400" aria-hidden="true"></i>
+          </a>
+        }
+      }
+
+      <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        Operacional
+      </p>
       <a routerLink="/org/escalas" routerLinkActive="active" class="admin-nav-link">
         <i class="ph ph-calendar-check text-lg" aria-hidden="true"></i>
         Escala
@@ -92,8 +111,30 @@
     </div>
   </aside>
 
-  <main class="min-w-0 flex-1 overflow-auto">
-    <div class="border-b border-slate-200 bg-white px-6 py-3 lg:px-10">
+  @if (menuServico(); as menu) {
+    <div
+      class="fixed z-50 pl-2"
+      [style.top.px]="menu.top"
+      [style.left.px]="menu.left"
+      (mouseenter)="manterMenuServico()"
+      (mouseleave)="agendarFecharMenuServico()"
+    >
+      <div class="admin-nav-flyout">
+        <a
+          [routerLink]="rotaDashboardServico(menu.codigo)"
+          class="admin-nav-flyout-item"
+          [class.active]="dashboardServicoAtivo(menu.codigo)"
+          (click)="menuServico.set(null)"
+        >
+          <i class="ph ph-chart-pie-slice text-base" aria-hidden="true"></i>
+          Dashboard
+        </a>
+      </div>
+    </div>
+  }
+
+  <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div class="shrink-0 border-b border-slate-200 bg-white px-6 py-3 lg:px-10">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <i class="ph ph-buildings text-slate-400" aria-hidden="true"></i>
         <span class="text-slate-500">Contexto</span>
@@ -110,6 +151,8 @@
         }
       </div>
     </div>
-    <router-outlet />
+    <div class="min-h-0 flex-1 overflow-auto">
+      <router-outlet />
+    </div>
   </main>
 </div>

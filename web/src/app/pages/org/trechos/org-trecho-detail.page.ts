@@ -3,18 +3,20 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { EditorLinhasTrechoComponent } from '../../../components/editor-linhas-trecho/editor-linhas-trecho.component';
 import {
-  Rua,
   STATUS_TRECHO_OPCOES,
+  Setor,
   StatusTrecho,
   Trecho,
+  rotuloSetor,
 } from '../../../models/cadastros-operacionais';
 import { CadastrosOperacionaisApiService } from '../../../services/cadastros-operacionais-api.service';
 import { mensagemHttp } from '../../../services/http-erro';
 
 @Component({
   selector: 'app-org-trecho-detail-page',
-  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink, EditorLinhasTrechoComponent],
   templateUrl: './org-trecho-detail.page.html',
 })
 export class OrgTrechoDetailPage implements OnInit {
@@ -24,16 +26,19 @@ export class OrgTrechoDetailPage implements OnInit {
   private readonly api = inject(CadastrosOperacionaisApiService);
 
   readonly statusOpcoes = STATUS_TRECHO_OPCOES;
+  readonly rotuloSetor = rotuloSetor;
   readonly carregando = signal(true);
   readonly salvando = signal(false);
   readonly erro = signal<string | null>(null);
   readonly ok = signal<string | null>(null);
   readonly trecho = signal<Trecho | null>(null);
-  readonly ruas = signal<Rua[]>([]);
+  readonly setores = signal<Setor[]>([]);
+  readonly linhaWkt = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
-    ruaId: [0, [Validators.required, Validators.min(1)]],
+    setorId: [0, [Validators.required, Validators.min(1)]],
     codigo: ['', [Validators.required, Validators.maxLength(80)]],
+    ruaNome: ['', [Validators.maxLength(200)]],
     geomWkt: ['', [Validators.required]],
     status: ['PLANEJADO' as StatusTrecho],
     percentualExecutado: [0, [Validators.min(0), Validators.max(100)]],
@@ -51,8 +56,8 @@ export class OrgTrechoDetailPage implements OnInit {
       this.carregando.set(false);
       return;
     }
-    this.api.listarRuas().subscribe({
-      next: (ruas) => this.ruas.set(ruas.filter((r) => r.ativo)),
+    this.api.listarSetores().subscribe({
+      next: (setores) => this.setores.set(setores.filter((s) => s.ativo)),
     });
     this.carregar();
   }
@@ -64,8 +69,9 @@ export class OrgTrechoDetailPage implements OnInit {
       next: (trecho) => {
         this.trecho.set(trecho);
         this.form.patchValue({
-          ruaId: trecho.ruaId,
+          setorId: trecho.setorId,
           codigo: trecho.codigo,
+          ruaNome: trecho.ruaNome ?? '',
           geomWkt: trecho.geomWkt,
           status: trecho.status,
           percentualExecutado: trecho.percentualExecutado,
@@ -73,6 +79,7 @@ export class OrgTrechoDetailPage implements OnInit {
           liberadoInforme: trecho.liberadoInforme,
           ativo: trecho.ativo,
         });
+        this.linhaWkt.set(trecho.geomWkt);
         this.carregando.set(false);
       },
       error: (erro: unknown) => {
@@ -93,8 +100,9 @@ export class OrgTrechoDetailPage implements OnInit {
     const raw = this.form.getRawValue();
     this.api
       .atualizarTrecho(this.id, {
-        ruaId: Number(raw.ruaId),
+        setorId: Number(raw.setorId),
         codigo: raw.codigo.trim(),
+        ruaNome: raw.ruaNome.trim() || null,
         geomWkt: raw.geomWkt.trim(),
         status: raw.status,
         percentualExecutado: Number(raw.percentualExecutado),
@@ -105,6 +113,7 @@ export class OrgTrechoDetailPage implements OnInit {
       .subscribe({
         next: (trecho) => {
           this.trecho.set(trecho);
+          this.linhaWkt.set(trecho.geomWkt);
           this.ok.set('Trecho atualizado.');
           this.salvando.set(false);
         },
@@ -123,5 +132,19 @@ export class OrgTrechoDetailPage implements OnInit {
       next: () => void this.router.navigateByUrl('/org/trechos'),
       error: (erro: unknown) => this.erro.set(mensagemHttp(erro, 'Falha ao desativar')),
     });
+  }
+
+  onLinhaConfirmada(wkts: string[]): void {
+    const wkt = wkts[0];
+    if (!wkt) {
+      return;
+    }
+    this.form.controls.geomWkt.setValue(wkt);
+    this.linhaWkt.set(wkt);
+  }
+
+  onLinhaLimpa(): void {
+    this.linhaWkt.set(null);
+    this.form.controls.geomWkt.setValue('');
   }
 }

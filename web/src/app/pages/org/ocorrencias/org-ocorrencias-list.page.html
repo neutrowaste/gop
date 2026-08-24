@@ -16,7 +16,7 @@
     <div class="admin-alert-error mb-4">{{ mensagem }}</div>
   }
 
-  <form class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5" [formGroup]="filtro">
+  <form class="admin-card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4" [formGroup]="filtro">
     <div class="space-y-1">
       <label class="text-xs font-medium text-slate-500" for="filtroData">Data</label>
       <input id="filtroData" type="date" formControlName="data" class="admin-input" />
@@ -26,16 +26,7 @@
       <select id="filtroSetor" formControlName="setorId" class="admin-input">
         <option [ngValue]="0">Todos</option>
         @for (setor of setores(); track setor.id) {
-          <option [ngValue]="setor.id">{{ setor.nome }}</option>
-        }
-      </select>
-    </div>
-    <div class="space-y-1">
-      <label class="text-xs font-medium text-slate-500" for="filtroEquipe">Equipe</label>
-      <select id="filtroEquipe" formControlName="equipeId" class="admin-input">
-        <option [ngValue]="0">Todas</option>
-        @for (equipe of equipesDoSetor(); track equipe.id) {
-          <option [ngValue]="equipe.id">{{ equipe.nome }}</option>
+          <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
         }
       </select>
     </div>
@@ -71,7 +62,7 @@
         <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-4 py-3 font-medium">Data</th>
-            <th class="px-4 py-3 font-medium">Setor / Equipe</th>
+            <th class="px-4 py-3 font-medium">Setor / Colaboradores</th>
             <th class="px-4 py-3 font-medium">Ativo GPS</th>
             <th class="px-4 py-3 font-medium">Tipo</th>
             <th class="px-4 py-3 font-medium">Descrição</th>
@@ -84,7 +75,7 @@
             <tr class="hover:bg-slate-50">
               <td class="px-4 py-3 text-slate-700">{{ ocorrencia.escalaData }}</td>
               <td class="px-4 py-3 text-slate-700">
-                {{ ocorrencia.setorNome }} · {{ ocorrencia.equipeNome }}
+                {{ ocorrencia.setorNome }} · {{ ocorrencia.colaboradoresNomes || '—' }}
               </td>
               <td class="px-4 py-3 text-slate-500">{{ ocorrencia.equipamentoCodigo }}</td>
               <td class="px-4 py-3">

@@ -4,7 +4,9 @@ import java.time.Instant;
 
 public record TrechoResponse(
 	Long id,
-	Long ruaId,
+	Long setorId,
+	String setorNome,
+	String setorCodigo,
 	String ruaNome,
 	String codigo,
 	StatusTrecho status,

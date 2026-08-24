@@ -41,11 +41,10 @@ public class OcorrenciaController {
 	public List<OcorrenciaResponse> listar(
 		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
 		@RequestParam(required = false) Long setorId,
-		@RequestParam(required = false) Long equipeId,
 		@RequestParam(required = false) StatusOcorrencia status,
 		@RequestParam(required = false) TipoOcorrencia tipo
 	) {
-		return ocorrenciaService.listar(empresaId(), data, setorId, equipeId, status, tipo);
+		return ocorrenciaService.listar(empresaId(), data, setorId, status, tipo);
 	}
 
 	@GetMapping("/{id}")

@@ -65,21 +65,23 @@ public class SaudeGpsScheduler {
 		int ocorrenciasAbertas = 0;
 		for (Escala escala : escalasPublicadas) {
 			Long empresaId = escala.getEmpresa().getId();
-			Long equipamentoId = escala.getEquipamento().getId();
 			long limiteMinutos = parametroEmpresaService.silencioGpsMinutos(empresaId);
+			for (var equipamento : escala.equipamentosDosColaboradores()) {
+				Long equipamentoId = equipamento.getId();
 
-			Instant ultimaTransmissao = posicaoGpsRepository
-				.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(empresaId, equipamentoId)
-				.map(PosicaoGps::getRecebidoEm)
-				.orElseGet(() -> escala.getPublicadaEm() != null ? escala.getPublicadaEm() : escala.getCriadoEm());
-			if (ultimaTransmissao == null) {
-				continue;
-			}
+				Instant ultimaTransmissao = posicaoGpsRepository
+					.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(empresaId, equipamentoId)
+					.map(PosicaoGps::getRecebidoEm)
+					.orElseGet(() -> escala.getPublicadaEm() != null ? escala.getPublicadaEm() : escala.getCriadoEm());
+				if (ultimaTransmissao == null) {
+					continue;
+				}
 
-			long minutosSemSinal = Duration.between(ultimaTransmissao, agora).toMinutes();
-			if (minutosSemSinal >= limiteMinutos) {
-				ocorrenciaService.criarGpsSilencioso(escala.getEmpresa(), escala, escala.getEquipamento(), minutosSemSinal);
-				ocorrenciasAbertas++;
+				long minutosSemSinal = Duration.between(ultimaTransmissao, agora).toMinutes();
+				if (minutosSemSinal >= limiteMinutos) {
+					ocorrenciaService.criarGpsSilencioso(escala.getEmpresa(), escala, equipamento, minutosSemSinal);
+					ocorrenciasAbertas++;
+				}
 			}
 		}
 		if (ocorrenciasAbertas > 0) {

@@ -73,7 +73,7 @@ public class TrechoExecucao extends BaseEntity {
 	@Column(name = "ultima_posicao_valida_em")
 	private Instant ultimaPosicaoValidaEm;
 
-	/** false = removido do plano do dia (editável apenas enquanto Escala em RASCUNHO). */
+	/** false = removido do plano (editável na avulsa e no modelo de frequência). */
 	@Column(nullable = false)
 	private boolean ativo = true;
 }

@@ -6,7 +6,7 @@ import { AutenticacaoService } from '../../../services/autenticacao.service';
 import { mensagemHttp } from '../../../services/http-erro';
 
 const DESCRICOES: Record<string, string> = {
-  ESCALA: 'Amarração diária de setor, equipe, GPS e supervisor.',
+  ESCALA: 'Amarração diária de setor, colaboradores, GPS e supervisor.',
   VARRIACAO_VIAS: 'Operação e acompanhamento de varrição de vias.',
   COLETA_PAPELEIRAS: 'Roteiros e execução de coleta de papeleiras.',
   MONITORAMENTO: 'Mapa operacional e acompanhamento em tempo real.',

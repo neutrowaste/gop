@@ -1,11 +1,10 @@
 package br.com.gop.services;
 
+import br.com.gop.models.Colaborador;
 import br.com.gop.models.Empresa;
 import br.com.gop.models.Equipamento;
 import br.com.gop.models.Escala;
-import br.com.gop.models.Equipe;
 import br.com.gop.models.PosicaoGps;
-import br.com.gop.models.Rua;
 import br.com.gop.models.Setor;
 import br.com.gop.models.StatusEscala;
 import br.com.gop.models.StatusTrecho;
@@ -70,10 +69,10 @@ class CoberturaTrechoServiceTests {
 	void naoProcessaQuandoNaoHaEscalaPublicadaParaODia() {
 		Empresa empresa = empresa(1L);
 		Escala escala = escala(10L, empresa, StatusEscala.PUBLICADA);
-		Equipamento equipamento = escala.getEquipamento();
+		Equipamento equipamento = equipamentoDa(escala);
 		PosicaoGps posicao = posicao();
 
-		when(escalaRepository.findByEmpresaIdAndEquipamentoIdAndDataAndStatusAndAtivoTrue(
+		when(escalaRepository.findPublicadasDoAtivoNoDia(
 			eq(1L), eq(equipamento.getId()), any(), eq(StatusEscala.PUBLICADA)
 		)).thenReturn(List.of());
 
@@ -88,10 +87,10 @@ class CoberturaTrechoServiceTests {
 	void marcaPosicaoInvalidaQuandoForaDoBufferDoPlano() {
 		Empresa empresa = empresa(1L);
 		Escala escala = escala(10L, empresa, StatusEscala.PUBLICADA);
-		Equipamento equipamento = escala.getEquipamento();
+		Equipamento equipamento = equipamentoDa(escala);
 		PosicaoGps posicao = posicao();
 
-		when(escalaRepository.findByEmpresaIdAndEquipamentoIdAndDataAndStatusAndAtivoTrue(
+		when(escalaRepository.findPublicadasDoAtivoNoDia(
 			eq(1L), eq(equipamento.getId()), any(), eq(StatusEscala.PUBLICADA)
 		)).thenReturn(List.of(escala));
 		when(parametroEmpresaService.snapBufferMetros(1L)).thenReturn(25.0);
@@ -174,7 +173,7 @@ class CoberturaTrechoServiceTests {
 		processarPonto(escala, atual, 0.95);
 
 		assertThat(atual.getStatus()).isEqualTo(StatusTrecho.EXECUTADO);
-		verify(ocorrenciaService).criarOrdemViolada(empresa, escala, atual);
+		verify(ocorrenciaService).criarOrdemViolada(empresa, escala, equipamentoDa(escala), atual);
 	}
 
 	@Test
@@ -198,12 +197,12 @@ class CoberturaTrechoServiceTests {
 		processarPonto(escala, atual, 0.95);
 
 		assertThat(atual.getStatus()).isEqualTo(StatusTrecho.EXECUTADO);
-		verify(ocorrenciaService, never()).criarOrdemViolada(any(), any(), any());
+		verify(ocorrenciaService, never()).criarOrdemViolada(any(), any(), any(), any());
 	}
 
 	private void configurarEscalaEParametros(Empresa empresa, Escala escala, double buffer, double limiar) {
-		when(escalaRepository.findByEmpresaIdAndEquipamentoIdAndDataAndStatusAndAtivoTrue(
-			eq(empresa.getId()), eq(escala.getEquipamento().getId()), any(), eq(StatusEscala.PUBLICADA)
+		when(escalaRepository.findPublicadasDoAtivoNoDia(
+			eq(empresa.getId()), eq(equipamentoDa(escala).getId()), any(), eq(StatusEscala.PUBLICADA)
 		)).thenReturn(List.of(escala));
 		when(parametroEmpresaService.snapBufferMetros(empresa.getId())).thenReturn(buffer);
 		when(parametroEmpresaService.coberturaMinimaPercentual(empresa.getId())).thenReturn(limiar);
@@ -218,7 +217,7 @@ class CoberturaTrechoServiceTests {
 			.thenReturn(Optional.of(projecao));
 		when(trechoExecucaoRepository.findById(execucao.getId())).thenReturn(Optional.of(execucao));
 
-		service.processar(escala.getEmpresa().getId(), escala.getEmpresa(), escala.getEquipamento(), posicao());
+		service.processar(escala.getEmpresa().getId(), escala.getEmpresa(), equipamentoDa(escala), posicao());
 	}
 
 	private void verifyNoSnapAttempt() {
@@ -239,14 +238,15 @@ class CoberturaTrechoServiceTests {
 		setor.setId(1L);
 		setor.setNome("Setor 1");
 
-		Equipe equipe = new Equipe();
-		equipe.setId(1L);
-		equipe.setNome("Equipe 1");
-
 		Equipamento equipamento = new Equipamento();
 		equipamento.setId(1L);
 		equipamento.setCodigo("LUT-0001");
-		equipamento.setEquipe(equipe);
+
+		Colaborador colaborador = new Colaborador();
+		colaborador.setId(1L);
+		colaborador.setNome("João Silva");
+		colaborador.setMatricula("M-001");
+		colaborador.setEquipamento(equipamento);
 
 		Usuario supervisor = new Usuario();
 		supervisor.setId(1L);
@@ -258,22 +258,26 @@ class CoberturaTrechoServiceTests {
 		escala.setData(java.time.LocalDate.now());
 		escala.setTurno(Turno.MANHA);
 		escala.setSetor(setor);
-		escala.setEquipe(equipe);
-		escala.setEquipamento(equipamento);
+		escala.getColaboradores().add(colaborador);
 		escala.setSupervisor(supervisor);
 		escala.setStatus(status);
 		escala.setAtivo(true);
 		return escala;
 	}
 
+	private Equipamento equipamentoDa(Escala escala) {
+		return escala.equipamentosDosColaboradores().iterator().next();
+	}
+
 	private Trecho trecho(Long id, String codigo) {
-		Rua rua = new Rua();
-		rua.setId(1L);
-		rua.setNome("Rua Teste");
+		Setor setor = new Setor();
+		setor.setId(1L);
+		setor.setNome("Setor Teste");
 
 		Trecho trecho = new Trecho();
 		trecho.setId(id);
-		trecho.setRua(rua);
+		trecho.setSetor(setor);
+		trecho.setNomeRua("Rua Teste");
 		trecho.setCodigo(codigo);
 		trecho.setAtivo(true);
 		return trecho;

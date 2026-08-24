@@ -3,14 +3,29 @@
     <div>
       <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Mapa Operacional</h2>
       <p class="mt-1 text-sm text-slate-500">
-        Posições dos ativos e status dos trechos das escalas publicadas de hoje.
+        Posições dos ativos e status dos trechos das escalas publicadas da data selecionada.
       </p>
     </div>
-    @if (ultimaAtualizacaoEm(); as ultima) {
-      <p class="text-xs text-slate-400">
-        Atualizado às {{ ultima | date: 'HH:mm:ss' }}
-      </p>
-    }
+    <div class="flex items-center gap-3">
+      <label class="flex items-center gap-2 text-sm text-slate-600">
+        Data
+        <input
+          type="date"
+          class="admin-input"
+          #dataInput
+          [value]="dataSelecionada()"
+          (change)="onDataChange(dataInput.value)"
+        />
+      </label>
+      <button type="button" class="admin-btn-secondary text-sm" (click)="voltarParaHoje()">
+        Hoje
+      </button>
+      @if (ultimaAtualizacaoEm(); as ultima) {
+        <p class="text-xs text-slate-400">
+          Atualizado às {{ ultima | date: 'HH:mm:ss' }}
+        </p>
+      }
+    </div>
   </header>
 
   @if (erro(); as mensagem) {
