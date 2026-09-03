@@ -7,7 +7,7 @@
         </span>
         <div class="min-w-0">
           <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-navy-700">GOP</p>
-          <p class="text-xs text-slate-500">Admin Empresa</p>
+          <p class="text-xs text-slate-500">{{ ehAdminEmpresa() ? 'Admin Empresa' : 'Painel' }}</p>
         </div>
       </div>
       @if (usuario()?.empresaNome; as empresaNome) {
@@ -36,32 +36,46 @@
         Visão geral
       </a>
 
-      <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Cadastros
-      </p>
-      <a routerLink="/org/setores" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-map-trifold text-lg" aria-hidden="true"></i>
-        Setores
-      </a>
-      <a routerLink="/org/trechos" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-path text-lg" aria-hidden="true"></i>
-        Trechos
-      </a>
-      <a routerLink="/org/equipes" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-users-three text-lg" aria-hidden="true"></i>
-        Colaboradores
-      </a>
-      <a routerLink="/org/usuarios" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-users text-lg" aria-hidden="true"></i>
-        Usuários
-      </a>
+      @if (pode('SETORES') || pode('TRECHOS') || pode('COLABORADORES') || ehAdminEmpresa()) {
+        <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Cadastros
+        </p>
+        @if (pode('SETORES')) {
+          <a routerLink="/org/setores" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-map-trifold text-lg" aria-hidden="true"></i>
+            Setores
+          </a>
+        }
+        @if (pode('TRECHOS')) {
+          <a routerLink="/org/trechos" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-path text-lg" aria-hidden="true"></i>
+            Trechos
+          </a>
+        }
+        @if (pode('COLABORADORES')) {
+          <a routerLink="/org/equipes" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-users-three text-lg" aria-hidden="true"></i>
+            Colaboradores
+          </a>
+        }
+        @if (ehAdminEmpresa()) {
+          <a routerLink="/org/usuarios" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-users text-lg" aria-hidden="true"></i>
+            Usuários
+          </a>
+        }
+      }
 
       <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
         Serviços
       </p>
       @if (servicos().length === 0) {
         <p class="px-3 py-2 text-xs leading-relaxed text-slate-400">
-          Nenhum serviço contratado para esta empresa.
+          {{
+            ehAdminEmpresa()
+              ? 'Nenhum serviço contratado para esta empresa.'
+              : 'Nenhum serviço liberado para o seu usuário.'
+          }}
         </p>
       } @else {
         @for (servico of servicos(); track servico.moduloId) {
@@ -79,17 +93,23 @@
         }
       }
 
-      <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Operacional
-      </p>
-      <a routerLink="/org/escalas" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-calendar-check text-lg" aria-hidden="true"></i>
-        Escala
-      </a>
-      <a routerLink="/org/ocorrencias" routerLinkActive="active" class="admin-nav-link">
-        <i class="ph ph-warning-circle text-lg" aria-hidden="true"></i>
-        Ocorrências
-      </a>
+      @if (pode('ESCALAS') || pode('OCORRENCIAS')) {
+        <p class="mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Operacional
+        </p>
+        @if (pode('ESCALAS')) {
+          <a routerLink="/org/escalas" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-calendar-check text-lg" aria-hidden="true"></i>
+            Escala
+          </a>
+        }
+        @if (pode('OCORRENCIAS')) {
+          <a routerLink="/org/ocorrencias" routerLinkActive="active" class="admin-nav-link">
+            <i class="ph ph-warning-circle text-lg" aria-hidden="true"></i>
+            Ocorrências
+          </a>
+        }
+      }
     </nav>
 
     <div class="border-t border-slate-200 p-4">

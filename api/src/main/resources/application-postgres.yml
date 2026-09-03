@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/gop
-    username: gop
-    password: gop
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/gop}
+    username: ${SPRING_DATASOURCE_USERNAME:gop}
+    password: ${SPRING_DATASOURCE_PASSWORD:gop}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     open-in-view: false
     show-sql: false
     # false: schema-postgis.sql roda ANTES do Hibernate criar colunas geometry

@@ -25,8 +25,13 @@ export class OrgShellPage implements OnInit, OnDestroy {
   private menuTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly usuario = this.autenticacao.usuario;
+  readonly ehAdminEmpresa = this.autenticacao.ehAdminEmpresa;
   readonly servicos = signal<EmpresaModulo[]>([]);
   readonly menuServico = signal<{ codigo: string; top: number; left: number } | null>(null);
+
+  pode(codigo: string): boolean {
+    return this.autenticacao.temAcessoMenu(codigo);
+  }
 
   ngOnInit(): void {
     this.orgApi.listarModulosContratados().subscribe({

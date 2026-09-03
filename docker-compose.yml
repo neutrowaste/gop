@@ -1,0 +1,52 @@
+# GOP no EasyPanel (Compose).
+# Aponte o domínio público para o serviço `web`.
+# A API fica interna; o nginx encaminha /api.
+#
+# Variáveis obrigatórias no painel: SPRING_DATASOURCE_PASSWORD, JWT_SECRET (>= 32 chars).
+# O banco bd_gop precisa existir e ter PostGIS (CREATE EXTENSION postgis).
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://devpanel.neutrowaste.cloud:12011/bd_gop?sslmode=disable}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-usr_bd_gop}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:-gop-local-dev-secret-change-me-2026}
+      GOP_CORS_ORIGINS: ${GOP_CORS_ORIGINS:-http://localhost:4200}
+      GOP_CORS_ORIGIN_PATTERNS: ${GOP_CORS_ORIGIN_PATTERNS:-}
+      GOP_SEED_ADMIN_ENABLED: ${GOP_SEED_ADMIN_ENABLED:-true}
+      GOP_SEED_ADMIN_EMAIL: ${GOP_SEED_ADMIN_EMAIL:-admin@gop.com}
+      GOP_SEED_ADMIN_SENHA: ${GOP_SEED_ADMIN_SENHA:-Admin@Gop2026}
+      GOP_SEED_ADMIN_NOME: ${GOP_SEED_ADMIN_NOME:-Admin Plataforma GOP}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      GOP_API_URL: ${GOP_API_URL:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

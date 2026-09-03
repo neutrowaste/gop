@@ -38,3 +38,12 @@ export interface EmpresaModulo {
   habilitado: boolean;
   desde: string | null;
 }
+
+export interface UsuarioAcessoMenu {
+  codigo: string;
+  nome: string;
+  grupo: string;
+  ordem: number;
+  liberado: boolean;
+  desde: string | null;
+}

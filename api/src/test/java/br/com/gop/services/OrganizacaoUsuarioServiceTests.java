@@ -75,6 +75,11 @@ class OrganizacaoUsuarioServiceTests {
 			return usuario;
 		});
 		when(usuarioPapelRepository.findPapeisAtivosByUsuarioId(90L)).thenReturn(List.of());
+		Papel papelUsuario = papelUsuario();
+		when(papelRepository.findByCodigoIgnoreCaseAndEmpresaIsNull(
+			CatalogoPlataformaSeedRunner.CODIGO_PAPEL_USUARIO_EMPRESA
+		)).thenReturn(Optional.of(papelUsuario));
+		when(usuarioPapelRepository.existsVinculoEmpresa(90L, 4L, 11L)).thenReturn(false);
 
 		var response = service.criar(
 			11L,
@@ -85,7 +90,7 @@ class OrganizacaoUsuarioServiceTests {
 		verify(usuarioRepository).save(captor.capture());
 		assertThat(captor.getValue().getEmail()).isEqualTo("ops@cliente.com");
 		assertThat(captor.getValue().getEmpresa()).isSameAs(empresa);
-		verify(usuarioPapelRepository, never()).save(any());
+		verify(usuarioPapelRepository).save(any(UsuarioPapel.class));
 		assertThat(response.administradorEmpresa()).isFalse();
 	}
 
@@ -143,6 +148,15 @@ class OrganizacaoUsuarioServiceTests {
 		empresa.setId(id);
 		empresa.setAtivo(true);
 		return empresa;
+	}
+
+	private Papel papelUsuario() {
+		Papel papel = new Papel();
+		papel.setId(4L);
+		papel.setCodigo(CatalogoPlataformaSeedRunner.CODIGO_PAPEL_USUARIO_EMPRESA);
+		papel.setEscopo(EscopoPapel.OPERACIONAL);
+		papel.setAtivo(true);
+		return papel;
 	}
 
 	private Papel papelAdmin() {

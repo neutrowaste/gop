@@ -2,6 +2,7 @@ package br.com.gop.config;
 
 import br.com.gop.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -30,6 +31,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
 	@Bean
@@ -45,6 +47,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers(
 					"/actuator/health",
+					"/actuator/health/**",
 					"/actuator/info",
 					"/v1/health",
 					"/v1/auth/login",
@@ -109,9 +112,18 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	CorsConfigurationSource corsConfigurationSource() {
+	CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+		List<String> origens = corsProperties.origensPermitidas();
+		List<String> padroes = corsProperties.padroesOrigem();
+		if (origens.size() == 1 && "*".equals(origens.get(0))) {
+			configuration.setAllowedOriginPatterns(List.of("*"));
+		} else {
+			configuration.setAllowedOrigins(origens);
+			if (!padroes.isEmpty()) {
+				configuration.setAllowedOriginPatterns(padroes);
+			}
+		}
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);

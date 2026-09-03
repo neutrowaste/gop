@@ -2,6 +2,7 @@ package br.com.gop.controllers;
 
 import br.com.gop.models.ParametroEmpresaRequest;
 import br.com.gop.models.ParametroEmpresaResponse;
+import br.com.gop.security.OrgAuth;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.ParametroEmpresaService;
 import jakarta.validation.Valid;
@@ -25,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/org/parametros")
 @Profile("postgres")
-@PreAuthorize("hasRole('ADMIN_EMPRESA') or hasAuthority('EMPRESA_USUARIO_GERENCIAR')")
+@PreAuthorize("isAuthenticated()")
 public class ParametroEmpresaController {
 
 	private final ParametroEmpresaService parametroEmpresaService;
@@ -35,11 +36,13 @@ public class ParametroEmpresaController {
 	}
 
 	@GetMapping
+	@PreAuthorize(OrgAuth.LER_PARAMETROS)
 	public List<ParametroEmpresaResponse> listar() {
 		return parametroEmpresaService.listar(empresaId());
 	}
 
 	@PutMapping("/{chave}")
+	@PreAuthorize(OrgAuth.ADMIN_EMPRESA)
 	public ParametroEmpresaResponse definir(
 		@PathVariable String chave,
 		@Valid @RequestBody ParametroEmpresaRequest request
@@ -48,6 +51,7 @@ public class ParametroEmpresaController {
 	}
 
 	@DeleteMapping("/{chave}")
+	@PreAuthorize(OrgAuth.ADMIN_EMPRESA)
 	public ResponseEntity<Void> restaurarPadrao(@PathVariable String chave) {
 		parametroEmpresaService.restaurarPadrao(empresaId(), chave);
 		return ResponseEntity.noContent().build();

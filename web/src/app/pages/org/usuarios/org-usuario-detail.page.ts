@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
-import { OrganizacaoUsuario, UsuarioModulo } from '../../../models/organizacao';
+import { OrganizacaoUsuario, UsuarioAcessoMenu, UsuarioModulo } from '../../../models/organizacao';
 import { AutenticacaoService } from '../../../services/autenticacao.service';
 import { mensagemHttp } from '../../../services/http-erro';
 import { OrganizacaoApiService } from '../../../services/organizacao-api.service';
@@ -25,6 +25,7 @@ export class OrgUsuarioDetailPage implements OnInit {
   readonly ok = signal<string | null>(null);
   readonly usuario = signal<OrganizacaoUsuario | null>(null);
   readonly modulos = signal<UsuarioModulo[]>([]);
+  readonly acessos = signal<UsuarioAcessoMenu[]>([]);
 
   readonly form = this.fb.nonNullable.group({
     nome: ['', [Validators.required, Validators.maxLength(200)]],
@@ -52,8 +53,9 @@ export class OrgUsuarioDetailPage implements OnInit {
     forkJoin({
       usuario: this.orgApi.buscarUsuario(this.usuarioId),
       modulos: this.orgApi.listarModulosDoUsuario(this.usuarioId),
+      acessos: this.orgApi.listarAcessosDoUsuario(this.usuarioId),
     }).subscribe({
-      next: ({ usuario, modulos }) => {
+      next: ({ usuario, modulos, acessos }) => {
         this.usuario.set(usuario);
         this.form.patchValue({
           nome: usuario.nome,
@@ -63,6 +65,7 @@ export class OrgUsuarioDetailPage implements OnInit {
           senha: '',
         });
         this.modulos.set(modulos);
+        this.acessos.set(acessos);
         this.carregando.set(false);
       },
       error: (erro: unknown) => {
@@ -92,9 +95,12 @@ export class OrgUsuarioDetailPage implements OnInit {
       .subscribe({
         next: (usuario) => {
           this.usuario.set(usuario);
-          this.form.patchValue({ senha: '' });
+          this.form.patchValue({ senha: '', administradorEmpresa: usuario.administradorEmpresa });
           this.ok.set('Usuário atualizado.');
           this.salvando.set(false);
+          this.orgApi.listarAcessosDoUsuario(this.usuarioId).subscribe({
+            next: (acessos) => this.acessos.set(acessos),
+          });
         },
         error: (erro: unknown) => {
           this.erro.set(mensagemHttp(erro, 'Falha ao atualizar usuário'));
@@ -140,5 +146,41 @@ export class OrgUsuarioDetailPage implements OnInit {
         error: (erro: unknown) =>
           this.erro.set(mensagemHttp(erro, 'Falha ao atualizar módulo do usuário')),
       });
+  }
+
+  alternarAcesso(acesso: UsuarioAcessoMenu): void {
+    this.orgApi
+      .atualizarAcessoDoUsuario(this.usuarioId, acesso.codigo, !acesso.liberado)
+      .subscribe({
+        next: (atualizado) => {
+          this.acessos.update((lista) =>
+            lista.map((item) => (item.codigo === atualizado.codigo ? atualizado : item)),
+          );
+          this.ok.set(
+            atualizado.liberado
+              ? `Acesso a ${atualizado.nome} liberado.`
+              : `Acesso a ${atualizado.nome} revogado.`,
+          );
+        },
+        error: (erro: unknown) =>
+          this.erro.set(mensagemHttp(erro, 'Falha ao atualizar acesso do usuário')),
+      });
+  }
+
+  iconeAcesso(codigo: string): string {
+    switch (codigo?.toUpperCase()) {
+      case 'SETORES':
+        return 'ph-map-trifold';
+      case 'TRECHOS':
+        return 'ph-path';
+      case 'COLABORADORES':
+        return 'ph-users-three';
+      case 'ESCALAS':
+        return 'ph-calendar-check';
+      case 'OCORRENCIAS':
+        return 'ph-warning-circle';
+      default:
+        return 'ph-lock-open';
+    }
   }
 }

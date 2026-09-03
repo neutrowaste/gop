@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, tap } from 'rxjs';
 
 import { LoginRequest } from '../models/login-request';
-import { UsuarioModulo } from '../models/organizacao';
+import { UsuarioAcessoMenu, UsuarioModulo } from '../models/organizacao';
 import { TokenResponse } from '../models/token-response';
 import { UsuarioSessao } from '../models/usuario-sessao';
 import { ApiService } from './api.service';
@@ -16,6 +16,8 @@ export class AutenticacaoService {
   private readonly api = inject(ApiService);
 
   private readonly sessao = signal<TokenResponse | null>(this.carregarSessao());
+  private readonly acessosMenu = signal<UsuarioAcessoMenu[]>([]);
+  private readonly modulosLiberados = signal<UsuarioModulo[]>([]);
 
   readonly usuario = this.sessao.asReadonly();
   readonly autenticado = computed(() => !!this.sessao()?.accessToken);
@@ -29,6 +31,7 @@ export class AutenticacaoService {
       !this.ehAdminPlataforma() &&
       !this.ehAdminEmpresa(),
   );
+  readonly ehPainelEmpresa = computed(() => this.ehAdminEmpresa() || this.ehFuncionario());
 
   login(credenciais: LoginRequest): Observable<TokenResponse> {
     return this.http
@@ -44,20 +47,56 @@ export class AutenticacaoService {
     return this.http.get<UsuarioModulo[]>(`${this.api.baseUrl}/v1/auth/me/modulos`);
   }
 
+  meusAcessos(): Observable<UsuarioAcessoMenu[]> {
+    return this.http.get<UsuarioAcessoMenu[]>(`${this.api.baseUrl}/v1/auth/me/acessos`);
+  }
+
+  garantirPainel(): Observable<boolean> {
+    return forkJoin({
+      acessos: this.meusAcessos().pipe(catchError(() => of([] as UsuarioAcessoMenu[]))),
+      modulos: this.ehAdminEmpresa()
+        ? of([] as UsuarioModulo[])
+        : this.meusModulos().pipe(catchError(() => of([] as UsuarioModulo[]))),
+    }).pipe(
+      tap(({ acessos, modulos }) => {
+        this.acessosMenu.set(acessos);
+        this.modulosLiberados.set(modulos);
+      }),
+      map(() => true),
+    );
+  }
+
+  temAcessoMenu(codigo: string): boolean {
+    if (this.ehAdminEmpresa()) {
+      return true;
+    }
+    return this.acessosMenu().some(
+      (item) => item.liberado && item.codigo.toUpperCase() === codigo.toUpperCase(),
+    );
+  }
+
+  temModulo(codigo: string): boolean {
+    if (this.ehAdminEmpresa()) {
+      return true;
+    }
+    return this.modulosLiberados().some(
+      (item) => item.liberado && item.codigo.toUpperCase() === codigo.toUpperCase(),
+    );
+  }
+
   logout(): void {
     this.limparStorage();
     this.sessao.set(null);
+    this.acessosMenu.set([]);
+    this.modulosLiberados.set([]);
   }
 
   rotaInicial(): string {
     if (this.ehAdminPlataforma()) {
       return '/admin';
     }
-    if (this.ehAdminEmpresa()) {
+    if (this.ehPainelEmpresa()) {
       return '/org';
-    }
-    if (this.ehFuncionario()) {
-      return '/app';
     }
     return '/admin/login';
   }
@@ -79,6 +118,8 @@ export class AutenticacaoService {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizada));
     sessionStorage.removeItem(STORAGE_KEY);
     this.sessao.set(normalizada);
+    this.acessosMenu.set([]);
+    this.modulosLiberados.set([]);
   }
 
   private carregarSessao(): TokenResponse | null {

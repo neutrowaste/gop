@@ -29,6 +29,7 @@ import java.util.Map;
 public class CatalogoPlataformaSeedRunner implements ApplicationRunner {
 
 	public static final String CODIGO_PAPEL_ADMIN_EMPRESA = "ADMIN_EMPRESA";
+	public static final String CODIGO_PAPEL_USUARIO_EMPRESA = "USUARIO_EMPRESA";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CatalogoPlataformaSeedRunner.class);
 
@@ -68,6 +69,7 @@ public class CatalogoPlataformaSeedRunner implements ApplicationRunner {
 		garantirModulos();
 		Papel papel = garantirPapelAdminEmpresa();
 		garantirPermissoesAdminEmpresa(papel);
+		garantirPapelUsuarioEmpresa();
 	}
 
 	private void garantirModulos() {
@@ -85,6 +87,20 @@ public class CatalogoPlataformaSeedRunner implements ApplicationRunner {
 					return modulo;
 				});
 		}
+	}
+
+	private Papel garantirPapelUsuarioEmpresa() {
+		return papelRepository.findByCodigoIgnoreCaseAndEmpresaIsNull(CODIGO_PAPEL_USUARIO_EMPRESA)
+			.orElseGet(() -> {
+				Papel papel = new Papel();
+				papel.setCodigo(CODIGO_PAPEL_USUARIO_EMPRESA);
+				papel.setNome("Usuário da Empresa");
+				papel.setEscopo(EscopoPapel.OPERACIONAL);
+				papel.setAtivo(true);
+				papelRepository.save(papel);
+				LOGGER.info("Papel {} criado", CODIGO_PAPEL_USUARIO_EMPRESA);
+				return papel;
+			});
 	}
 
 	private Papel garantirPapelAdminEmpresa() {

@@ -4,6 +4,7 @@ import br.com.gop.models.OcorrenciaResolucaoRequest;
 import br.com.gop.models.OcorrenciaResponse;
 import br.com.gop.models.StatusOcorrencia;
 import br.com.gop.models.TipoOcorrencia;
+import br.com.gop.security.OrgAuth;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.OcorrenciaService;
 import jakarta.validation.Valid;
@@ -28,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/org/ocorrencias")
 @Profile("postgres")
-@PreAuthorize("hasRole('ADMIN_EMPRESA') or hasAuthority('EMPRESA_USUARIO_GERENCIAR')")
+@PreAuthorize(OrgAuth.OCORRENCIAS)
 public class OcorrenciaController {
 
 	private final OcorrenciaService ocorrenciaService;

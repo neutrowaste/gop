@@ -6,6 +6,7 @@ import {
   EmpresaModulo,
   OrganizacaoUsuario,
   OrganizacaoUsuarioRequest,
+  UsuarioAcessoMenu,
   UsuarioModulo,
 } from '../models/organizacao';
 import { TetoAtivos } from '../models/licenca';
@@ -62,6 +63,21 @@ export class OrganizacaoApiService {
   ): Observable<UsuarioModulo> {
     return this.http.put<UsuarioModulo>(
       `${this.base}/usuarios/${usuarioId}/modulos/${moduloId}`,
+      { liberado },
+    );
+  }
+
+  listarAcessosDoUsuario(usuarioId: number): Observable<UsuarioAcessoMenu[]> {
+    return this.http.get<UsuarioAcessoMenu[]>(`${this.base}/usuarios/${usuarioId}/acessos`);
+  }
+
+  atualizarAcessoDoUsuario(
+    usuarioId: number,
+    codigo: string,
+    liberado: boolean,
+  ): Observable<UsuarioAcessoMenu> {
+    return this.http.put<UsuarioAcessoMenu>(
+      `${this.base}/usuarios/${usuarioId}/acessos/${codigo}`,
       { liberado },
     );
   }

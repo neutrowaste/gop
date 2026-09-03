@@ -3,6 +3,7 @@ package br.com.gop.controllers;
 import br.com.gop.models.TrechoExecucaoReordenarRequest;
 import br.com.gop.models.TrechoExecucaoRequest;
 import br.com.gop.models.TrechoExecucaoResponse;
+import br.com.gop.security.OrgAuth;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.TrechoExecucaoService;
 import jakarta.validation.Valid;
@@ -28,7 +29,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/org/escalas/{escalaId}/trechos")
 @Profile("postgres")
-@PreAuthorize("hasRole('ADMIN_EMPRESA') or hasAuthority('EMPRESA_USUARIO_GERENCIAR')")
+@PreAuthorize(OrgAuth.ESCALAS)
 public class TrechoExecucaoController {
 
 	private final TrechoExecucaoService trechoExecucaoService;

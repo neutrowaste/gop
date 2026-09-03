@@ -4,6 +4,7 @@ import br.com.gop.models.EscalaRequest;
 import br.com.gop.models.EscalaResponse;
 import br.com.gop.models.StatusEscala;
 import br.com.gop.models.TipoEscala;
+import br.com.gop.security.OrgAuth;
 import br.com.gop.security.SegurancaContexto;
 import br.com.gop.services.EscalaService;
 import jakarta.validation.Valid;
@@ -33,7 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/org/escalas")
 @Profile("postgres")
-@PreAuthorize("hasRole('ADMIN_EMPRESA') or hasAuthority('EMPRESA_USUARIO_GERENCIAR')")
+@PreAuthorize(OrgAuth.ESCALAS)
 public class EscalaController {
 
 	private final EscalaService escalaService;

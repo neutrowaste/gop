@@ -1,5 +1,6 @@
 package br.com.gop.services;
 
+import br.com.gop.models.AcessoMenu;
 import br.com.gop.models.EscopoPapel;
 import br.com.gop.models.Papel;
 import br.com.gop.models.PapelPermissao;
@@ -7,6 +8,7 @@ import br.com.gop.models.Usuario;
 import br.com.gop.models.UsuarioPapel;
 import br.com.gop.repositories.EmpresaModuloRepository;
 import br.com.gop.repositories.PapelPermissaoRepository;
+import br.com.gop.repositories.UsuarioAcessoMenuRepository;
 import br.com.gop.repositories.UsuarioModuloRepository;
 import br.com.gop.repositories.UsuarioPapelRepository;
 import br.com.gop.repositories.UsuarioRepository;
@@ -33,19 +35,22 @@ public class UsuarioAutenticacaoService implements UserDetailsService {
 	private final PapelPermissaoRepository papelPermissaoRepository;
 	private final EmpresaModuloRepository empresaModuloRepository;
 	private final UsuarioModuloRepository usuarioModuloRepository;
+	private final UsuarioAcessoMenuRepository usuarioAcessoMenuRepository;
 
 	public UsuarioAutenticacaoService(
 		UsuarioRepository usuarioRepository,
 		UsuarioPapelRepository usuarioPapelRepository,
 		PapelPermissaoRepository papelPermissaoRepository,
 		EmpresaModuloRepository empresaModuloRepository,
-		UsuarioModuloRepository usuarioModuloRepository
+		UsuarioModuloRepository usuarioModuloRepository,
+		UsuarioAcessoMenuRepository usuarioAcessoMenuRepository
 	) {
 		this.usuarioRepository = usuarioRepository;
 		this.usuarioPapelRepository = usuarioPapelRepository;
 		this.papelPermissaoRepository = papelPermissaoRepository;
 		this.empresaModuloRepository = empresaModuloRepository;
 		this.usuarioModuloRepository = usuarioModuloRepository;
+		this.usuarioAcessoMenuRepository = usuarioAcessoMenuRepository;
 	}
 
 	@Override
@@ -78,7 +83,13 @@ public class UsuarioAutenticacaoService implements UserDetailsService {
 		Set<Long> modulosUsuario = empresaId == null
 			? Set.of()
 			: usuarioModuloRepository.findModuloIdsLiberadosByUsuarioId(usuario.getId());
-		Set<String> permissoes = carregarPermissoes(papelIds, empresaId, modulosEmpresa, modulosUsuario);
+		Set<String> permissoes = carregarPermissoes(
+			usuario.getId(),
+			papelIds,
+			empresaId,
+			modulosEmpresa,
+			modulosUsuario
+		);
 
 		Set<SimpleGrantedAuthority> authorities = new LinkedHashSet<>();
 		papeis.stream()
@@ -104,25 +115,29 @@ public class UsuarioAutenticacaoService implements UserDetailsService {
 	}
 
 	private Set<String> carregarPermissoes(
+		Long usuarioId,
 		Set<Long> papelIds,
 		Long empresaId,
 		Set<Long> modulosEmpresa,
 		Set<Long> modulosUsuario
 	) {
-		if (papelIds.isEmpty()) {
-			return Set.of();
-		}
-
 		Set<String> permissoes = new LinkedHashSet<>();
-		for (PapelPermissao vinculo : papelPermissaoRepository.findPermissoesAtivasByPapelIds(papelIds)) {
-			var permissao = vinculo.getPermissao();
-			if (empresaId == null || permissao.getModulo() == null) {
-				permissoes.add(normalizar(permissao.getCodigo()));
-				continue;
+		if (!papelIds.isEmpty()) {
+			for (PapelPermissao vinculo : papelPermissaoRepository.findPermissoesAtivasByPapelIds(papelIds)) {
+				var permissao = vinculo.getPermissao();
+				if (empresaId == null || permissao.getModulo() == null) {
+					permissoes.add(normalizar(permissao.getCodigo()));
+					continue;
+				}
+				Long moduloId = permissao.getModulo().getId();
+				if (modulosEmpresa.contains(moduloId) && modulosUsuario.contains(moduloId)) {
+					permissoes.add(normalizar(permissao.getCodigo()));
+				}
 			}
-			Long moduloId = permissao.getModulo().getId();
-			if (modulosEmpresa.contains(moduloId) && modulosUsuario.contains(moduloId)) {
-				permissoes.add(normalizar(permissao.getCodigo()));
+		}
+		if (empresaId != null) {
+			for (String codigo : usuarioAcessoMenuRepository.findCodigosLiberadosByUsuarioId(usuarioId)) {
+				AcessoMenu.buscar(codigo).ifPresent(item -> permissoes.add(item.authority()));
 			}
 		}
 		return permissoes;

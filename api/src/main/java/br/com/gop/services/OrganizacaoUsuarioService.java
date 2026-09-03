@@ -94,6 +94,8 @@ public class OrganizacaoUsuarioService {
 
 		if (Boolean.TRUE.equals(request.administradorEmpresa())) {
 			atribuirAdminEmpresa(usuario, empresa);
+		} else {
+			atribuirUsuarioEmpresa(usuario, empresa);
 		}
 
 		Map<String, Object> payload = new LinkedHashMap<>();
@@ -197,25 +199,36 @@ public class OrganizacaoUsuarioService {
 	}
 
 	private void sincronizarAdminEmpresa(Usuario usuario, Empresa empresa, boolean tornarAdmin) {
-		Papel papel = papelAdminEmpresa();
+		Papel papelAdmin = papelAdminEmpresa();
 		boolean jaEAdmin = usuarioPapelRepository.existsVinculoEmpresa(
 			usuario.getId(),
-			papel.getId(),
+			papelAdmin.getId(),
 			empresa.getId()
 		);
 		if (tornarAdmin && !jaEAdmin) {
 			atribuirAdminEmpresa(usuario, empresa);
+			removerPapel(usuario, empresa, papelUsuarioEmpresa());
 		} else if (!tornarAdmin && jaEAdmin) {
 			usuarioPapelRepository.deleteByUsuarioIdAndPapelIdAndEmpresaId(
 				usuario.getId(),
-				papel.getId(),
+				papelAdmin.getId(),
 				empresa.getId()
 			);
+			atribuirUsuarioEmpresa(usuario, empresa);
+		} else if (!tornarAdmin) {
+			atribuirUsuarioEmpresa(usuario, empresa);
 		}
 	}
 
 	private void atribuirAdminEmpresa(Usuario usuario, Empresa empresa) {
-		Papel papel = papelAdminEmpresa();
+		atribuirPapel(usuario, empresa, papelAdminEmpresa());
+	}
+
+	private void atribuirUsuarioEmpresa(Usuario usuario, Empresa empresa) {
+		atribuirPapel(usuario, empresa, papelUsuarioEmpresa());
+	}
+
+	private void atribuirPapel(Usuario usuario, Empresa empresa, Papel papel) {
 		if (usuarioPapelRepository.existsVinculoEmpresa(
 			usuario.getId(),
 			papel.getId(),
@@ -231,14 +244,43 @@ public class OrganizacaoUsuarioService {
 		usuarioPapelRepository.save(vinculo);
 	}
 
+	private void removerPapel(Usuario usuario, Empresa empresa, Papel papel) {
+		if (!usuarioPapelRepository.existsVinculoEmpresa(
+			usuario.getId(),
+			papel.getId(),
+			empresa.getId()
+		)) {
+			return;
+		}
+		usuarioPapelRepository.deleteByUsuarioIdAndPapelIdAndEmpresaId(
+			usuario.getId(),
+			papel.getId(),
+			empresa.getId()
+		);
+	}
+
 	private Papel papelAdminEmpresa() {
+		return papelAtivo(
+			CatalogoPlataformaSeedRunner.CODIGO_PAPEL_ADMIN_EMPRESA,
+			EscopoPapel.ORGANIZACAO
+		);
+	}
+
+	private Papel papelUsuarioEmpresa() {
+		return papelAtivo(
+			CatalogoPlataformaSeedRunner.CODIGO_PAPEL_USUARIO_EMPRESA,
+			EscopoPapel.OPERACIONAL
+		);
+	}
+
+	private Papel papelAtivo(String codigo, EscopoPapel escopoEsperado) {
 		Papel papel = papelRepository
-			.findByCodigoIgnoreCaseAndEmpresaIsNull(CatalogoPlataformaSeedRunner.CODIGO_PAPEL_ADMIN_EMPRESA)
+			.findByCodigoIgnoreCaseAndEmpresaIsNull(codigo)
 			.orElseThrow(() -> new RegraNegocioException(
-				"Papel ADMIN_EMPRESA não configurado na plataforma"
+				"Papel " + codigo + " não configurado na plataforma"
 			));
-		if (papel.getEscopo() != EscopoPapel.ORGANIZACAO || !papel.isAtivo()) {
-			throw new RegraNegocioException("Papel ADMIN_EMPRESA inválido ou inativo");
+		if (papel.getEscopo() != escopoEsperado || !papel.isAtivo()) {
+			throw new RegraNegocioException("Papel " + codigo + " inválido ou inativo");
 		}
 		return papel;
 	}
