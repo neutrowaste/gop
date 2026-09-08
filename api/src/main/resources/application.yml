@@ -37,6 +37,9 @@ logging:
     org.hibernate.SQL: WARN
 
 gop:
+  cors:
+    origins: ${GOP_CORS_ORIGINS:http://localhost:4200}
+    origin-patterns: ${GOP_CORS_ORIGIN_PATTERNS:}
   rassystem:
     base-url: ${RASSYSTEM_BASE_URL:https://backend.rassystem.com.br/app/v1/api}
     login: tsilva2

@@ -2,6 +2,7 @@ package br.com.gop.config;
 
 import br.com.gop.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -108,10 +109,34 @@ public class SecurityConfig {
 		return new ProviderManager(provider);
 	}
 
+	@Value("${gop.cors.origins:http://localhost:4200}")
+	private String corsOrigins;
+
+	@Value("${gop.cors.origin-patterns:}")
+	private String corsOriginPatterns;
+
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+
+		if (corsOrigins != null && !corsOrigins.isBlank()) {
+			List<String> origins = java.util.Arrays.stream(corsOrigins.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.toList();
+			configuration.setAllowedOrigins(origins);
+		} else {
+			configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+		}
+
+		if (corsOriginPatterns != null && !corsOriginPatterns.isBlank()) {
+			List<String> patterns = java.util.Arrays.stream(corsOriginPatterns.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.toList();
+			configuration.setAllowedOriginPatterns(patterns);
+		}
+
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
