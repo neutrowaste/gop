@@ -2,7 +2,7 @@ package br.com.gop.config;
 
 import br.com.gop.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -31,7 +31,6 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
 	@Bean
@@ -47,7 +46,6 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers(
 					"/actuator/health",
-					"/actuator/health/**",
 					"/actuator/info",
 					"/v1/health",
 					"/v1/auth/login",
@@ -111,19 +109,34 @@ public class SecurityConfig {
 		return new ProviderManager(provider);
 	}
 
+	@Value("${gop.cors.origins:http://localhost:4200}")
+	private String corsOrigins;
+
+	@Value("${gop.cors.origin-patterns:}")
+	private String corsOriginPatterns;
+
 	@Bean
-	CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
+	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		List<String> origens = corsProperties.origensPermitidas();
-		List<String> padroes = corsProperties.padroesOrigem();
-		if (origens.size() == 1 && "*".equals(origens.get(0))) {
-			configuration.setAllowedOriginPatterns(List.of("*"));
+
+		if (corsOrigins != null && !corsOrigins.isBlank()) {
+			List<String> origins = java.util.Arrays.stream(corsOrigins.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.toList();
+			configuration.setAllowedOrigins(origins);
 		} else {
-			configuration.setAllowedOrigins(origens);
-			if (!padroes.isEmpty()) {
-				configuration.setAllowedOriginPatterns(padroes);
-			}
+			configuration.setAllowedOrigins(List.of("http://localhost:4200"));
 		}
+
+		if (corsOriginPatterns != null && !corsOriginPatterns.isBlank()) {
+			List<String> patterns = java.util.Arrays.stream(corsOriginPatterns.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.toList();
+			configuration.setAllowedOriginPatterns(patterns);
+		}
+
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);

@@ -1,0 +1,14 @@
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+api/target
+api/.mvn
+api/mvnw
+api/mvnw.cmd
+web/node_modules
+web/dist
+web/.angular
+web/.vscode
+*.log

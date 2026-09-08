@@ -1,14 +1,12 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
-RUN npm run build
+COPY . ./
+RUN npm run build -- --configuration production
 
-FROM nginx:1.27-alpine
+FROM nginx:alpine AS runner
+COPY --from=builder /app/dist/web/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist/web/browser /usr/share/nginx/html
-COPY --chmod=755 docker-entrypoint.d/99-gop-runtime.sh /docker-entrypoint.d/99-gop-runtime.sh
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
-	CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
+CMD ["nginx", "-g", "daemon off;"]
