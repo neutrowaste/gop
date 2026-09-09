@@ -127,7 +127,7 @@ public class RasSystemClient {
 						throw new IntegracaoExternaException(
 							"RasSystem recusou o login \"" + properties.getLogin()
 								+ "\" (HTTP 401). Confira gop.rassystem.login/senha "
-								+ "ou as variáveis RASSYSTEM_LOGIN e RASSYSTEM_SENHA (no legado era RASSYSTEM_PASSWORD).",
+								+ "ou as variáveis RASSYSTEM_LOGIN e RASSYSTEM_SENHA.",
 							status
 						);
 					}
