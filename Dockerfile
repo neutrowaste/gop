@@ -68,6 +68,7 @@ RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 ENV SPRING_PROFILES_ACTIVE=postgres \
     PORT=80
 
-EXPOSE 80
+# 80: HTTP do Nginx. 5023: TCP do rastreador GT06, escutado pela API no mesmo container.
+EXPOSE 80 5023
 
 ENTRYPOINT ["/app/entrypoint.sh"]
