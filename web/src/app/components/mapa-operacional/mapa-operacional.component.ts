@@ -26,6 +26,7 @@ import {
   STATUS_TRECHO_CORES,
 } from '../../models/mapa-operacional';
 import { STATUS_TRECHO_OPCOES, StatusTrecho } from '../../models/cadastros-operacionais';
+import { ESTILO_BASEMAP } from '../../services/basemap';
 
 const FONTE_TRECHOS = 'gop-trechos';
 const FONTE_ATIVOS = 'gop-ativos';
@@ -35,8 +36,8 @@ const CAMADA_ATIVOS = 'gop-ativos-ponto';
 /**
  * Mapa operacional (RN-001): trechos do plano do dia coloridos por status e
  * posição atual dos ativos GPS. TODO(fase futura): trocar o basemap público
- * (raster OSM) por tiles pg_tileserv/Martin quando a infra existir, e migrar
- * a atualização de polling para WebSocket incremental.
+ * por tiles pg_tileserv/Martin quando a infra existir, e migrar a atualização
+ * de polling para WebSocket incremental.
  */
 @Component({
   selector: 'app-mapa-operacional',
@@ -67,24 +68,7 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
     const container = this.mapaContainer.nativeElement;
     this.mapa = new maplibregl.Map({
       container,
-      style: {
-        version: 8,
-        sources: {
-          // OSM tile.openstreetmap.org bloqueia uso em apps (x-blocked).
-          // Carto CDN redistribui tiles OSM de forma adequada para demos/dev.
-          basemap: {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors © CARTO',
-          },
-        },
-        layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
-      },
+      style: ESTILO_BASEMAP,
       center: [-46.63, -23.55],
       zoom: 12,
     });

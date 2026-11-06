@@ -104,6 +104,9 @@ public class EquipamentoService {
 		equipamento.setCodigo(codigo);
 		equipamento.setDescricao(request.descricao() == null ? null : request.descricao().strip());
 		equipamento.setCodigoExterno(normalizarCodigoExterno(request.codigoExterno()));
+		if (request.fonte() != null) {
+			equipamento.setFonte(request.fonte());
+		}
 		if (request.ativo() != null) {
 			equipamento.setAtivo(request.ativo());
 		}

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { Colaborador, Equipamento } from '../../../models/cadastros-operacionais';
+import { Colaborador, Equipamento, EquipamentoRequest } from '../../../models/cadastros-operacionais';
 import { TetoAtivos } from '../../../models/licenca';
 import { CadastrosOperacionaisApiService } from '../../../services/cadastros-operacionais-api.service';
 import { mensagemHttp } from '../../../services/http-erro';
@@ -48,7 +48,10 @@ export class OrgEquipesListPage implements OnInit {
   readonly formLutocar = this.fb.nonNullable.group({
     codigo: ['', [Validators.required, Validators.maxLength(60)]],
     descricao: [''],
+    codigoExterno: ['', [Validators.maxLength(80)]],
   });
+
+  private fonteLutocar: Equipamento['fonte'] = null;
 
   ngOnInit(): void {
     this.recarregarTudo();
@@ -175,15 +178,19 @@ export class OrgEquipesListPage implements OnInit {
     }
     if (lutocar) {
       this.editandoLutocarId.set(lutocar.id);
+      this.fonteLutocar = lutocar.fonte ?? null;
       this.formLutocar.reset({
         codigo: lutocar.codigo,
         descricao: lutocar.descricao ?? '',
+        codigoExterno: lutocar.codigoExterno ?? '',
       });
     } else {
       this.editandoLutocarId.set(null);
+      this.fonteLutocar = null;
       this.formLutocar.reset({
         codigo: '',
         descricao: '',
+        codigoExterno: '',
       });
     }
     this.mostrarFormLutocar.set(true);
@@ -202,11 +209,16 @@ export class OrgEquipesListPage implements OnInit {
     this.salvando.set(true);
     this.erro.set(null);
     const raw = this.formLutocar.getRawValue();
-    const body = {
+    const codigoExterno = raw.codigoExterno.replace(/\s+/g, '');
+    const body: EquipamentoRequest = {
       codigo: raw.codigo.trim(),
       descricao: raw.descricao.trim() || null,
+      codigoExterno: codigoExterno || null,
       ativo: true,
     };
+    if (/^\d{14,16}$/.test(codigoExterno) && this.fonteLutocar !== 'RASSYSTEM') {
+      body.fonte = 'PROPRIO';
+    }
     const id = this.editandoLutocarId();
     const req$ = id == null
       ? this.api.criarEquipamento(body)

@@ -14,6 +14,7 @@ import {
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 
+import { ESTILO_BASEMAP } from '../../services/basemap';
 import { AnelLngLat, linhaParaWkt, wktParaLinha, wktParaLinhas } from '../../services/geometria-wkt';
 
 const FONTE = 'gop-trecho-linhas';
@@ -55,22 +56,7 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
     const container = this.mapaContainer.nativeElement;
     this.mapa = new maplibregl.Map({
       container,
-      style: {
-        version: 8,
-        sources: {
-          basemap: {
-            type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors © CARTO',
-          },
-        },
-        layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
-      },
+      style: ESTILO_BASEMAP,
       center: CENTRO_RECIFE,
       zoom: 12,
     });

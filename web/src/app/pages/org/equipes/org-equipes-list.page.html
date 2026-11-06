@@ -233,6 +233,20 @@
           />
         </div>
         <div class="space-y-1">
+          <label class="text-xs text-slate-500" for="imeiLutocar">IMEI / código externo</label>
+          <input
+            id="imeiLutocar"
+            formControlName="codigoExterno"
+            inputmode="numeric"
+            maxlength="80"
+            placeholder="IMEI de 15 dígitos do rastreador"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-600"
+          />
+          <p class="text-xs text-slate-500">
+            O GPS GT06 entra no mapa por este IMEI. O log da API mostra o número no login do aparelho.
+          </p>
+        </div>
+        <div class="space-y-1">
           <label class="text-xs text-slate-500" for="descLutocar">Descrição (opcional)</label>
           <input
             id="descLutocar"
@@ -272,7 +286,7 @@
               <p class="text-xs text-slate-500">
                 {{ rotuloFonte(lutocar) }}
                 @if (lutocar.codigoExterno) {
-                  · id {{ lutocar.codigoExterno }}
+                  · {{ lutocar.fonte === 'PROPRIO' ? 'IMEI' : 'id' }} {{ lutocar.codigoExterno }}
                 }
                 @if (lutocar.descricao) {
                   · {{ lutocar.descricao }}

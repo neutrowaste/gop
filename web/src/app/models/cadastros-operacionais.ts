@@ -151,6 +151,7 @@ export interface EquipamentoRequest {
   descricao?: string | null;
   codigoExterno?: string | null;
   ativo?: boolean | null;
+  fonte?: Equipamento['fonte'];
 }
 
 export type Turno = 'MANHA' | 'TARDE' | 'NOITE';

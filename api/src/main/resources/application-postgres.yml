@@ -27,6 +27,13 @@ spring:
       schema-locations: classpath:schema-postgis.sql
 
 gop:
+  gps:
+    tcp:
+      # Mesma porta do túnel ngrok (tcp://… -> localhost:5023).
+      # Pare a sonda tools/gps-tcp-probe antes de subir a API: os dois não dividem a porta.
+      enabled: ${GOP_GPS_TCP_ENABLED:true}
+      host: ${GOP_GPS_TCP_HOST:0.0.0.0}
+      port: ${GOP_GPS_TCP_PORT:5023}
   seed:
     admin-plataforma:
       enabled: ${GOP_SEED_ADMIN_ENABLED:true}
