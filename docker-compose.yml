@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: postgres
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://devpanel.neutrowaste.cloud:12011/bd_gop?sslmode=disable}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://devpanel.neutrowaste.cloud:12012/bd_gop?sslmode=disable}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-usr_bd_gop}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:-gop-local-dev-secret-change-me-2026}
