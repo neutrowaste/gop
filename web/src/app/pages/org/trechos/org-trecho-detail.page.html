@@ -112,6 +112,8 @@
       class="min-h-[28rem]"
       [modoMultiplo]="false"
       [geomWkt]="linhaWkt()"
+      [setorGeom]="setorSelecionado()?.geomGeoJson ?? setorSelecionado()?.geomWkt"
+      [setorNome]="setorSelecionado()?.nome ?? null"
       (confirmado)="onLinhaConfirmada($event)"
       (limpo)="onLinhaLimpa()"
     />

@@ -100,6 +100,11 @@ export class OrgTrechosListPage implements OnInit {
     this.linhasWkt.set([]);
   }
 
+  setorSelecionado(): Setor | null {
+    const setorId = Number(this.form.controls.setorId.value);
+    return this.setores().find((setor) => setor.id === setorId) ?? null;
+  }
+
   abrirImportacao(): void {
     this.resultadoImportacao.set(null);
     this.arquivoShapefile.set(null);

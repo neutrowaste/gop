@@ -5,9 +5,7 @@
         {{ codigo() }}
       </p>
       <h2 class="text-xl font-semibold tracking-tight text-slate-900">Dashboard · {{ nome() }}</h2>
-      <p class="mt-0.5 text-xs text-slate-500">
-        Escalas do dia, trechos do plano e posição dos ativos — no mesmo recorte da operação.
-      </p>
+      <p class="mt-0.5 text-xs text-slate-500">{{ contextoOperacao() }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <label class="flex items-center gap-2 text-sm text-slate-600">
@@ -138,64 +136,199 @@
     </div>
 
     <div
-      class="grid grid-cols-12 gap-3 max-lg:auto-rows-[420px] lg:min-h-0 lg:flex-[1.35] lg:[grid-template-rows:minmax(0,1fr)]"
+      class="grid grid-cols-1 gap-3 max-lg:auto-rows-[420px] lg:min-h-0 lg:flex-[1.9] lg:grid-cols-[minmax(156px,0.78fr)_minmax(0,2.5fr)_minmax(156px,0.78fr)] lg:[grid-template-rows:minmax(0,1fr)]"
     >
-      <section class="admin-card col-span-12 flex min-h-0 flex-col overflow-hidden lg:col-span-3">
-        <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-          <h3 class="text-sm font-semibold text-slate-800">
-            Escalas ({{ escalasPainel().length }})
-          </h3>
-          <a routerLink="/org/escalas" class="text-[11px] font-medium text-navy-700 hover:text-navy-900">
-            Ver todas
-          </a>
-        </div>
-        <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
-          @if (escalasPainel().length === 0) {
-            <p class="py-8 text-center text-xs text-slate-400">Nenhuma escala nesta data.</p>
-          }
-          @for (item of escalasPainel(); track item.escalaId) {
-            @let estado = estadoEscala(item);
-            <a
-              [routerLink]="['/org/escalas', item.escalaId]"
-              class="block rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 transition hover:border-navy-300 hover:bg-white"
+      <section class="admin-card flex min-h-0 min-w-0 flex-col overflow-hidden">
+        @if (escalaFocoId() != null) {
+          <div class="flex items-center border-b border-slate-200 px-3 py-2">
+            <button
+              type="button"
+              class="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-navy-700 hover:text-navy-900"
+              (click)="voltarParaEscalas()"
             >
-              <div class="flex items-center justify-between gap-2">
-                <span class="truncate text-[13px] font-semibold text-slate-800">{{ item.nome }}</span>
-                <span class="shrink-0 text-xs font-bold text-slate-500">{{ item.percentual }}%</span>
+              <i class="ph ph-arrow-left shrink-0" aria-hidden="true"></i>
+              <span class="truncate">{{ setorFoco()?.nome || 'Escalas do setor' }}</span>
+            </button>
+          </div>
+          @if (escalaSelecionada(); as escala) {
+            @let estado = estadoEscala(escala);
+            <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+              <div>
+                <h3 class="truncate text-sm font-semibold text-slate-800">{{ escala.nome }}</h3>
+                <p class="mt-0.5 text-[11px] text-slate-500">{{ escala.turnoLabel }}</p>
               </div>
-              <p class="mt-0.5 truncate text-[11px] text-slate-500">
-                {{ item.setorNome }} · {{ item.turnoLabel }}
-              </p>
-              <div class="mt-1 flex items-center justify-between gap-2">
-                <span class="flex items-center gap-1 text-[11px] font-medium {{ estado.classe }}">
-                  @if (item.situacaoSinal; as sinal) {
-                    <span
-                      class="h-1.5 w-1.5 rounded-full"
-                      [style.background-color]="situacaoCores[sinal]"
-                    ></span>
-                  }
-                  {{ estado.label }}
-                </span>
-                @if (item.total > 0) {
-                  <span class="text-[11px] text-slate-400">{{ item.executados }}/{{ item.total }} trechos</span>
+              <dl class="space-y-2 text-[11px]">
+                @if (escalaCadastro(); as cadastro) {
+                  <div>
+                    <dt class="text-slate-400">Supervisor</dt>
+                    <dd class="truncate font-medium text-slate-700">{{ cadastro.supervisorNome }}</dd>
+                  </div>
                 }
-              </div>
-              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                <div>
+                  <dt class="text-slate-400">GPS</dt>
+                  <dd class="truncate font-medium text-slate-700">{{ escala.equipamentoCodigo }}</dd>
+                </div>
+                <div>
+                  <dt class="text-slate-400">Situação</dt>
+                  <dd class="flex items-center gap-1 font-medium {{ estado.classe }}">
+                    @if (escala.situacaoSinal; as sinal) {
+                      <span
+                        class="h-1.5 w-1.5 rounded-full"
+                        [style.background-color]="situacaoCores[sinal]"
+                      ></span>
+                    }
+                    {{ estado.label }}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-slate-400">Trechos</dt>
+                  <dd class="font-medium text-slate-700">
+                    {{ escala.executados }}/{{ escala.total }} · {{ escala.percentual }}%
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-slate-400">Ocorrências abertas</dt>
+                  <dd class="font-medium text-slate-700">{{ ocorrenciasPainel().length }}</dd>
+                </div>
+              </dl>
+              <div class="h-1.5 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  class="h-full rounded-full transition-all {{ corBarra(item.percentual) }}"
-                  [style.width.%]="item.percentual"
+                  class="h-full rounded-full transition-all {{ corBarra(escala.percentual) }}"
+                  [style.width.%]="escala.percentual"
                 ></div>
               </div>
-            </a>
+            </div>
+            <div class="border-t border-slate-200 p-2">
+              <a
+                [routerLink]="['/org/escalas', escala.escalaId]"
+                class="admin-btn-secondary w-full text-xs"
+              >
+                Abrir escala
+              </a>
+            </div>
+          } @else {
+            <p class="px-3 py-8 text-center text-xs text-slate-400">Escala fora deste recorte.</p>
           }
-        </div>
+        } @else if (setorFocoId() != null) {
+          <div class="border-b border-slate-200 px-3 py-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-[11px] font-medium text-navy-700 hover:text-navy-900"
+              (click)="voltarParaSetores()"
+            >
+              <i class="ph ph-arrow-left" aria-hidden="true"></i>
+              Todos os setores
+            </button>
+            <h3 class="mt-1 truncate text-sm font-semibold text-slate-800">
+              {{ setorFoco()?.nome || 'Setor' }}
+            </h3>
+            <p class="text-[11px] text-slate-400">
+              {{ escalasDoSetor().length }}
+              {{ escalasDoSetor().length === 1 ? 'escala' : 'escalas' }}
+            </p>
+          </div>
+          <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+            @if (escalasDoSetor().length === 0) {
+              <p class="py-8 text-center text-xs text-slate-400">Nenhuma escala neste setor.</p>
+            }
+            @for (item of escalasDoSetor(); track item.escalaId) {
+              @let estado = estadoEscala(item);
+              <button
+                type="button"
+                class="block w-full rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 text-left transition hover:border-navy-300 hover:bg-white"
+                (click)="selecionarEscala(item)"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <span class="truncate text-[13px] font-semibold text-slate-800">{{ item.nome }}</span>
+                  <span class="shrink-0 text-xs font-bold text-slate-500">{{ item.percentual }}%</span>
+                </div>
+                <p class="mt-0.5 truncate text-[11px] text-slate-500">
+                  {{ item.turnoLabel }} · {{ item.equipamentoCodigo }}
+                </p>
+                <div class="mt-1 flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-1 text-[11px] font-medium {{ estado.classe }}">
+                    @if (item.situacaoSinal; as sinal) {
+                      <span
+                        class="h-1.5 w-1.5 rounded-full"
+                        [style.background-color]="situacaoCores[sinal]"
+                      ></span>
+                    }
+                    {{ estado.label }}
+                  </span>
+                  @if (item.total > 0) {
+                    <span class="text-[11px] text-slate-400">{{ item.executados }}/{{ item.total }}</span>
+                  }
+                </div>
+                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    class="h-full rounded-full transition-all {{ corBarra(item.percentual) }}"
+                    [style.width.%]="item.percentual"
+                  ></div>
+                </div>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="border-b border-slate-200 px-3 py-2">
+            <h3 class="text-sm font-semibold text-slate-800">
+              Setores ({{ setoresPainel().length }})
+            </h3>
+            <p class="text-[11px] text-slate-400">Em operação nesta data</p>
+          </div>
+          <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+            @if (setoresPainel().length === 0) {
+              <p class="py-8 text-center text-xs text-slate-400">Nenhum setor em operação nesta data.</p>
+            }
+            @for (setor of setoresPainel(); track setor.setorId) {
+              <button
+                type="button"
+                class="block w-full rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 text-left transition hover:border-navy-300 hover:bg-white"
+                (click)="selecionarSetor(setor.setorId)"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <span class="truncate text-[13px] font-semibold text-slate-800">{{ setor.nome }}</span>
+                  <span class="shrink-0 text-xs font-bold text-slate-500">{{ setor.percentual }}%</span>
+                </div>
+                <div class="mt-1 flex items-center justify-between gap-2">
+                  <span class="flex items-center gap-1 text-[11px] text-slate-500">
+                    @if (setor.situacaoSinal; as sinal) {
+                      <span
+                        class="h-1.5 w-1.5 rounded-full"
+                        [style.background-color]="situacaoCores[sinal]"
+                      ></span>
+                      {{ situacaoLabels[sinal] }}
+                    } @else {
+                      Sem sinal
+                    }
+                  </span>
+                  <span class="text-[11px] text-slate-400">
+                    {{ setor.escalas }} {{ setor.escalas === 1 ? 'escala' : 'escalas' }}
+                  </span>
+                </div>
+                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    class="h-full rounded-full transition-all {{ corBarra(setor.percentual) }}"
+                    [style.width.%]="setor.percentual"
+                  ></div>
+                </div>
+              </button>
+            }
+          </div>
+        }
       </section>
 
-      <section class="col-span-12 min-h-0 lg:col-span-6">
-        <app-mapa-operacional [dados]="dadosMapa()" [compacto]="true" />
+      <section class="h-full min-h-0">
+        <app-mapa-operacional
+          [dados]="dadosMapa()"
+          [compacto]="true"
+          [setorGeom]="geomSetorFoco()"
+          [setorNome]="setorFoco()?.nome ?? null"
+          [enquadrarTrechos]="setorFocoId() != null"
+          (recorteSelecionado)="selecionarRecorte($event.setorId, $event.escalaId)"
+        />
       </section>
 
-      <div class="col-span-12 flex min-h-0 flex-col gap-3 lg:col-span-3">
+      <div class="flex min-h-0 flex-col gap-3">
         <section class="admin-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
             <h3 class="text-sm font-semibold text-slate-800">
@@ -238,15 +371,20 @@
           <div class="border-b border-slate-200 px-3 py-2">
             <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ativos GPS</h3>
             <p class="text-[10px] text-slate-400">
-              {{ ativosDoModulo().length }} na escala · {{ ativosOnline() }} online
+              {{ ativosVisiveis().length }} na escala · {{ ativosOnline() }} online
             </p>
           </div>
           <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
-            @if (ativosDoModulo().length === 0) {
-              <li class="py-6 text-center text-xs text-slate-400">Nenhum ativo com posição nesta data.</li>
+            @if (ativosVisiveis().length === 0) {
+              <li class="py-6 text-center text-xs text-slate-400">Nenhum ativo com posição neste recorte.</li>
             }
-            @for (ativo of ativosDoModulo(); track ativo.equipamentoId) {
-              <li class="flex items-center gap-2 rounded-lg px-2 py-1.5">
+            @for (ativo of ativosVisiveis(); track ativo.equipamentoId) {
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-slate-50"
+                  (click)="selecionarRecorte(ativo.setorId, ativo.escalaId)"
+                >
                 <span
                   class="h-2 w-2 shrink-0 rounded-full"
                   [style.background-color]="situacaoCores[ativo.situacaoSinal]"
@@ -262,6 +400,7 @@
                 <span class="shrink-0 text-[11px] tabular-nums text-slate-500">
                   {{ rotuloVelocidade(ativo.velocidadeKmh) }}
                 </span>
+                </button>
               </li>
             }
           </ul>
@@ -270,7 +409,7 @@
     </div>
 
     <div
-      class="grid grid-cols-12 gap-3 max-lg:auto-rows-[280px] lg:min-h-0 lg:flex-1 lg:[grid-template-rows:minmax(0,1fr)]"
+      class="grid grid-cols-12 gap-3 max-lg:auto-rows-[280px] lg:min-h-0 lg:flex-[0.85] lg:[grid-template-rows:minmax(0,1fr)]"
     >
       <section class="admin-card col-span-12 flex min-h-0 flex-col overflow-hidden lg:col-span-8">
         <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
@@ -298,7 +437,10 @@
                 </tr>
               }
               @for (trecho of trechosPendentes(); track trecho.trechoExecucaoId) {
-                <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <tr
+                  class="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                  (click)="selecionarRecorte(trecho.setorId, trecho.escalaId)"
+                >
                   <td class="px-3 py-2 font-medium text-slate-800">
                     {{ trecho.ruaNome || trecho.trechoCodigo }}
                     @if (trecho.ruaNome) {

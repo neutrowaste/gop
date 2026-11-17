@@ -61,6 +61,7 @@ export interface ResumoDashboard {
 export interface EscalaPainel {
   escalaId: number;
   nome: string;
+  setorId: number;
   setorNome: string;
   turnoLabel: string;
   equipamentoCodigo: string;
@@ -68,6 +69,16 @@ export interface EscalaPainel {
   executados: number;
   total: number;
   status: Escala['status'] | null;
+  situacaoSinal: SituacaoSinal | null;
+}
+
+export interface SetorPainel {
+  setorId: number;
+  nome: string;
+  percentual: number;
+  escalas: number;
+  executados: number;
+  total: number;
   situacaoSinal: SituacaoSinal | null;
 }
 
@@ -103,10 +114,13 @@ export class OrgServicoDashboardPage implements OnInit {
   readonly escalas = signal<Escala[]>([]);
   readonly ocorrencias = signal<Ocorrencia[]>([]);
   readonly modulo = signal<EmpresaModulo | null>(null);
+  readonly setores = signal<Setor[]>([]);
   readonly setorIds = signal<Set<number> | null>(null);
   readonly ultimaAtualizacaoEm = signal<Date | null>(null);
   readonly dataSelecionada = signal<string>(hojeIso());
   readonly filtroKpi = signal<FiltroKpiMapa>('all');
+  readonly setorFocoId = signal<number | null>(null);
+  readonly escalaFocoId = signal<number | null>(null);
 
   readonly statusCores = STATUS_TRECHO_CORES;
   readonly statusLabels = STATUS_TRECHO_LABELS;
@@ -127,7 +141,56 @@ export class OrgServicoDashboardPage implements OnInit {
     return ids ? ativos.filter((ativo) => ids.has(ativo.setorId)) : ativos;
   });
 
-  readonly resumo = computed(() => resumirTrechos(this.trechosDoModulo()));
+  readonly escalasPainel = computed(() =>
+    montarEscalasPainel(this.escalas(), this.trechosDoModulo(), this.ativosDoModulo(), this.setorIds()),
+  );
+
+  readonly setoresPainel = computed(() =>
+    montarSetoresPainel(this.escalasPainel(), this.trechosDoModulo(), this.ativosDoModulo()),
+  );
+
+  readonly setorFoco = computed(
+    () => this.setoresPainel().find((setor) => setor.setorId === this.setorFocoId()) ?? null,
+  );
+
+  readonly geomSetorFoco = computed(() => {
+    const setorId = this.setorFocoId();
+    if (setorId == null) {
+      return null;
+    }
+    const setor = this.setores().find((item) => item.id === setorId);
+    return setor?.geomGeoJson ?? setor?.geomWkt ?? null;
+  });
+
+  readonly escalasDoSetor = computed(() => {
+    const setorId = this.setorFocoId();
+    if (setorId == null) {
+      return [];
+    }
+    return this.escalasPainel().filter((escala) => escala.setorId === setorId);
+  });
+
+  readonly escalaSelecionada = computed(
+    () => this.escalasPainel().find((escala) => escala.escalaId === this.escalaFocoId()) ?? null,
+  );
+
+  readonly escalaCadastro = computed(() => {
+    const escalaId = this.escalaFocoId();
+    if (escalaId == null) {
+      return null;
+    }
+    return this.escalas().find((escala) => escala.id === escalaId) ?? null;
+  });
+
+  readonly trechosVisiveis = computed(() =>
+    filtrarRecorte(this.trechosDoModulo(), this.setorFocoId(), this.escalaFocoId()),
+  );
+
+  readonly ativosVisiveis = computed(() =>
+    filtrarRecorte(this.ativosDoModulo(), this.setorFocoId(), this.escalaFocoId()),
+  );
+
+  readonly resumo = computed(() => resumirTrechos(this.trechosVisiveis()));
 
   readonly dadosMapa = computed((): MapaOperacional | null => {
     const dados = this.dados();
@@ -136,26 +199,30 @@ export class OrgServicoDashboardPage implements OnInit {
     }
     return {
       ...dados,
-      trechos: filtrarTrechos(this.trechosDoModulo(), this.filtroKpi()),
-      ativos: this.ativosDoModulo(),
+      trechos: filtrarTrechos(this.trechosVisiveis(), this.filtroKpi()),
+      ativos: this.ativosVisiveis(),
     };
   });
 
-  readonly escalasPainel = computed(() =>
-    montarEscalasPainel(this.escalas(), this.trechosDoModulo(), this.ativosDoModulo(), this.setorIds()),
-  );
+  readonly escalasVisiveis = computed(() => {
+    const escalaId = this.escalaFocoId();
+    if (escalaId != null) {
+      return this.escalasPainel().filter((escala) => escala.escalaId === escalaId);
+    }
+    const setorId = this.setorFocoId();
+    if (setorId != null) {
+      return this.escalasDoSetor();
+    }
+    return this.escalasPainel();
+  });
 
   readonly ocorrenciasPainel = computed(() => {
-    const ids = this.setorIds();
-    if (!ids) {
-      return this.ocorrencias();
-    }
-    const escalaIds = new Set(this.escalasPainel().map((item) => item.escalaId));
+    const escalaIds = new Set(this.escalasVisiveis().map((item) => item.escalaId));
     return this.ocorrencias().filter((ocorrencia) => escalaIds.has(ocorrencia.escalaId));
   });
 
   readonly trechosPendentes = computed(() =>
-    this.trechosDoModulo()
+    this.trechosVisiveis()
       .filter((trecho) => PENDENTES_TABELA.includes(trecho.status) && trecho.status !== 'EXECUTADO')
       .filter((trecho) => !CONFORMES.includes(trecho.status))
       .slice()
@@ -163,10 +230,23 @@ export class OrgServicoDashboardPage implements OnInit {
       .slice(0, 40),
   );
 
+  readonly contextoOperacao = computed(() => {
+    const escala = this.escalaSelecionada();
+    if (escala) {
+      return `${escala.setorNome} · ${escala.nome} · ${escala.turnoLabel}`;
+    }
+    const setor = this.setorFoco();
+    if (setor) {
+      const rotulo = setor.escalas === 1 ? 'escala' : 'escalas';
+      return `${setor.nome} · ${setor.escalas} ${rotulo}`;
+    }
+    return 'Todos os setores em operação, trechos do plano e posição dos ativos.';
+  });
+
   readonly risco = computed(() => nivelRisco(this.resumo().riscoGlosa));
   readonly donutCss = computed(() => montarDonutCss(this.resumo()));
   readonly ativosOnline = computed(
-    () => this.ativosDoModulo().filter((ativo) => ativo.situacaoSinal === 'ONLINE').length,
+    () => this.ativosVisiveis().filter((ativo) => ativo.situacaoSinal === 'ONLINE').length,
   );
   readonly fatiasLegenda = computed(() => {
     const resumo = this.resumo();
@@ -181,8 +261,10 @@ export class OrgServicoDashboardPage implements OnInit {
   ngOnInit(): void {
     toObservable(this.codigo, { injector: this.injector })
       .pipe(
-        switchMap((codigo) =>
-          this.orgApi.listarModulosContratados().pipe(
+        switchMap((codigo) => {
+          this.setorFocoId.set(null);
+          this.escalaFocoId.set(null);
+          return this.orgApi.listarModulosContratados().pipe(
             catchError(() => of([] as EmpresaModulo[])),
             switchMap((modulos) => {
               const modulo = modulos.find((item) => item.codigo.toUpperCase() === codigo) ?? null;
@@ -195,13 +277,15 @@ export class OrgServicoDashboardPage implements OnInit {
                 .listarSetores(undefined, modulo.moduloId)
                 .pipe(catchError(() => of([] as Setor[])));
             }),
-          ),
-        ),
+          );
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((setores) => {
         const ativos = setores.filter((setor) => setor.ativo);
+        this.setores.set(ativos);
         this.setorIds.set(ativos.length > 0 ? new Set(ativos.map((setor) => setor.id)) : null);
+        this.reconciliarFoco();
       });
 
     toObservable(this.dataSelecionada, { injector: this.injector })
@@ -233,6 +317,7 @@ export class OrgServicoDashboardPage implements OnInit {
         this.ultimaAtualizacaoEm.set(new Date());
         this.carregando.set(false);
         this.erro.set(null);
+        this.reconciliarFoco();
       });
   }
 
@@ -242,7 +327,54 @@ export class OrgServicoDashboardPage implements OnInit {
     }
     this.carregando.set(true);
     this.erro.set(null);
+    this.setorFocoId.set(null);
+    this.escalaFocoId.set(null);
     this.dataSelecionada.set(valor);
+  }
+
+  selecionarSetor(setorId: number): void {
+    this.setorFocoId.set(setorId);
+    this.escalaFocoId.set(null);
+  }
+
+  selecionarEscala(escala: EscalaPainel): void {
+    this.selecionarRecorte(escala.setorId, escala.escalaId);
+  }
+
+  selecionarRecorte(setorId: number, escalaId: number): void {
+    const ids = this.setorIds();
+    if (ids && !ids.has(setorId)) {
+      return;
+    }
+    this.setorFocoId.set(setorId);
+    this.escalaFocoId.set(escalaId);
+  }
+
+  voltarParaSetores(): void {
+    this.setorFocoId.set(null);
+    this.escalaFocoId.set(null);
+  }
+
+  voltarParaEscalas(): void {
+    this.escalaFocoId.set(null);
+  }
+
+  private reconciliarFoco(): void {
+    const setorId = this.setorFocoId();
+    if (setorId != null && !this.setoresPainel().some((setor) => setor.setorId === setorId)) {
+      this.setorFocoId.set(null);
+      this.escalaFocoId.set(null);
+      return;
+    }
+    const escalaId = this.escalaFocoId();
+    if (
+      escalaId != null &&
+      !this.escalasPainel().some(
+        (escala) => escala.escalaId === escalaId && (setorId == null || escala.setorId === setorId),
+      )
+    ) {
+      this.escalaFocoId.set(null);
+    }
   }
 
   voltarParaHoje(): void {
@@ -401,6 +533,7 @@ function montarEscalasPainel(
     painel.push({
       escalaId,
       nome,
+      setorId: escala?.setorId ?? trechosEscala[0]?.setorId ?? ativosEscala[0]?.setorId ?? 0,
       setorNome: escala?.setorNome || trechosEscala[0]?.setorNome || ativosEscala[0]?.setorNome || '—',
       turnoLabel: escala ? TURNO_LABELS[escala.turno] : ativosEscala[0] ? TURNO_LABELS[ativosEscala[0].turno] : '—',
       equipamentoCodigo:
@@ -415,7 +548,71 @@ function montarEscalasPainel(
     });
   }
 
-  return painel.sort((a, b) => a.setorNome.localeCompare(b.setorNome, 'pt-BR'));
+  return painel.sort(
+    (a, b) =>
+      a.setorNome.localeCompare(b.setorNome, 'pt-BR') || a.nome.localeCompare(b.nome, 'pt-BR'),
+  );
+}
+
+function montarSetoresPainel(
+  escalas: EscalaPainel[],
+  trechos: MapaTrecho[],
+  ativos: MapaAtivo[],
+): SetorPainel[] {
+  const ids = new Set<number>();
+  for (const escala of escalas) {
+    if (escala.setorId > 0) {
+      ids.add(escala.setorId);
+    }
+  }
+  for (const trecho of trechos) {
+    ids.add(trecho.setorId);
+  }
+  for (const ativo of ativos) {
+    ids.add(ativo.setorId);
+  }
+
+  const painel: SetorPainel[] = [];
+  for (const setorId of ids) {
+    const escalasSetor = escalas.filter((item) => item.setorId === setorId);
+    const trechosSetor = trechos.filter((item) => item.setorId === setorId);
+    const ativosSetor = ativos.filter((item) => item.setorId === setorId);
+    const total = trechosSetor.length;
+    const executados = trechosSetor.filter((item) => item.status === 'EXECUTADO').length;
+    const percentual =
+      total > 0
+        ? Math.round(trechosSetor.reduce((acc, item) => acc + item.percentualExecutado, 0) / total)
+        : 0;
+    painel.push({
+      setorId,
+      nome:
+        escalasSetor[0]?.setorNome ||
+        trechosSetor[0]?.setorNome ||
+        ativosSetor[0]?.setorNome ||
+        `Setor #${setorId}`,
+      percentual,
+      escalas: escalasSetor.length,
+      executados,
+      total,
+      situacaoSinal: piorSinal(ativosSetor.map((item) => item.situacaoSinal)),
+    });
+  }
+
+  return painel.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+function filtrarRecorte<T extends { setorId: number; escalaId: number }>(
+  itens: T[],
+  setorId: number | null,
+  escalaId: number | null,
+): T[] {
+  if (escalaId != null) {
+    return itens.filter((item) => item.escalaId === escalaId);
+  }
+  if (setorId != null) {
+    return itens.filter((item) => item.setorId === setorId);
+  }
+  return itens;
 }
 
 function piorSinal(sinais: SituacaoSinal[]): SituacaoSinal | null {

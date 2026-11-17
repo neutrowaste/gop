@@ -5,6 +5,20 @@
   "
 >
   <div #mapaContainer class="h-full w-full"></div>
+  @if (setorDestacado && setorNome) {
+    <div
+      class="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-blue-200 bg-white/95 px-2.5 py-1.5 text-xs text-slate-600 shadow-sm"
+    >
+      <span class="h-2.5 w-2.5 rounded-sm bg-blue-600/80"></span>
+      Área de {{ setorNome }}
+    </div>
+  } @else if (setorNome) {
+    <div
+      class="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1.5 text-xs text-slate-500 shadow-sm"
+    >
+      {{ setorNome }} sem área demarcada
+    </div>
+  }
 
   <div
     class="pointer-events-none absolute right-3 top-14 z-10 rounded-lg border border-slate-200 bg-white/95 text-xs shadow-lg"

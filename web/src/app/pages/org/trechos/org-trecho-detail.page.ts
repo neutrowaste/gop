@@ -147,4 +147,9 @@ export class OrgTrechoDetailPage implements OnInit {
     this.linhaWkt.set(null);
     this.form.controls.geomWkt.setValue('');
   }
+
+  setorSelecionado(): Setor | null {
+    const setorId = Number(this.form.controls.setorId.value);
+    return this.setores().find((setor) => setor.id === setorId) ?? null;
+  }
 }

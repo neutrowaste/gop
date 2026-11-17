@@ -111,6 +111,7 @@
             <option [ngValue]="setor.id">{{ rotuloSetor(setor) }}</option>
           }
         </select>
+        <p class="text-xs text-slate-400">A área do setor escolhido aparece destacada no mapa.</p>
       </div>
       <div class="space-y-1">
         <label class="text-xs font-medium text-slate-500" for="codigo">Código (opcional)</label>
@@ -152,6 +153,8 @@
     </form>
     <app-editor-linhas-trecho
       [geomWkts]="linhasWkt()"
+      [setorGeom]="setorSelecionado()?.geomGeoJson ?? setorSelecionado()?.geomWkt"
+      [setorNome]="setorSelecionado()?.nome ?? null"
       (confirmado)="onLinhasConfirmadas($event)"
       (limpo)="onLinhasLimpas()"
     />

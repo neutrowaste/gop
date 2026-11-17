@@ -27,6 +27,20 @@
   </div>
   <div class="relative min-h-[20rem] flex-1">
     <div #mapaContainer class="h-full min-h-[20rem] w-full"></div>
+    @if (setorDestacado()) {
+      <div
+        class="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-blue-200 bg-white/95 px-2.5 py-1.5 text-xs text-slate-600 shadow-sm"
+      >
+        <span class="h-2.5 w-2.5 rounded-sm bg-blue-600/80"></span>
+        Área{{ setorNome ? ' de ' + setorNome : ' do setor' }}
+      </div>
+    } @else if (setorNome) {
+      <div
+        class="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1.5 text-xs text-slate-500 shadow-sm"
+      >
+        {{ setorNome }} sem área demarcada
+      </div>
+    }
   </div>
   <p class="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
     @if (confirmadoLocal()) {
@@ -35,7 +49,11 @@
     } @else if (bloqueado()) {
       Linha fechada. Confirme para usar esta geometria.
     } @else if (modoMultiplo) {
-      Clique no mapa para traçar a linha. Duplo clique ou “Concluir linha” fecha o trecho e permite desenhar o
+      {{
+        setorDestacado()
+          ? 'Desenhe o endereço dentro da área destacada. '
+          : ''
+      }}Clique no mapa para traçar a linha. Duplo clique ou “Concluir linha” fecha o trecho e permite desenhar o
       próximo.
     } @else {
       Clique no mapa para adicionar pontos. Duplo clique para concluir a linha.

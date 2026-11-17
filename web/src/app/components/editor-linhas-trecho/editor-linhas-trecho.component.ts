@@ -15,9 +15,21 @@ import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 
 import { ESTILO_BASEMAP } from '../../services/basemap';
-import { AnelLngLat, linhaParaWkt, wktParaLinha, wktParaLinhas } from '../../services/geometria-wkt';
+import {
+  AnelLngLat,
+  GeometriaSetorGeoJson,
+  linhaParaWkt,
+  normalizarGeometriaSetor,
+  pontosDaGeometria,
+  wktParaGeoJson,
+  wktParaLinha,
+  wktParaLinhas,
+} from '../../services/geometria-wkt';
 
 const FONTE = 'gop-trecho-linhas';
+const FONTE_SETOR = 'gop-trecho-setor';
+const CAMADA_SETOR_FILL = 'gop-trecho-setor-fill';
+const CAMADA_SETOR_LINHA = 'gop-trecho-setor-linha';
 const CAMADA_CONCLUIDA = 'gop-trecho-concluida';
 const CAMADA_ATUAL = 'gop-trecho-atual';
 const CAMADA_VERTICES = 'gop-trecho-vertices';
@@ -34,6 +46,8 @@ const CENTRO_RECIFE: [number, number] = [-34.881, -8.047];
 export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() geomWkt: string | null = null;
   @Input() geomWkts: string[] | null = null;
+  @Input() setorGeom: unknown = null;
+  @Input() setorNome: string | null = null;
   @Input() modoMultiplo = true;
   @Output() readonly confirmado = new EventEmitter<string[]>();
   @Output() readonly limpo = new EventEmitter<void>();
@@ -42,6 +56,7 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
 
   readonly bloqueado = signal(false);
   readonly confirmadoLocal = signal(false);
+  readonly setorDestacado = signal(false);
   readonly verticesCount = signal(0);
   readonly linhasCount = signal(0);
 
@@ -69,6 +84,25 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
     this.mapa.on('load', () => {
       this.mapaPronto = true;
       this.mapa!.resize();
+      this.mapa!.addSource(FONTE_SETOR, { type: 'geojson', data: this.colecaoVazia() });
+      this.mapa!.addLayer({
+        id: CAMADA_SETOR_FILL,
+        type: 'fill',
+        source: FONTE_SETOR,
+        paint: {
+          'fill-color': '#2563eb',
+          'fill-opacity': 0.18,
+        },
+      });
+      this.mapa!.addLayer({
+        id: CAMADA_SETOR_LINHA,
+        type: 'line',
+        source: FONTE_SETOR,
+        paint: {
+          'line-color': '#1d4ed8',
+          'line-width': 2.5,
+        },
+      });
       this.mapa!.addSource(FONTE, { type: 'geojson', data: this.colecaoVazia() });
       this.mapa!.addLayer({
         id: CAMADA_CONCLUIDA,
@@ -104,6 +138,7 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
         },
       });
       this.carregarGeometria();
+      this.aplicarSetor();
     });
 
     this.mapa.on('click', (evento) => {
@@ -134,6 +169,9 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['geomWkt'] || changes['geomWkts']) && this.mapaPronto) {
       this.carregarGeometria();
+    }
+    if (changes['setorGeom'] && this.mapaPronto) {
+      this.aplicarSetor();
     }
   }
 
@@ -274,6 +312,36 @@ export class EditorLinhasTrechoComponent implements AfterViewInit, OnChanges, On
     }
     this.mapa.resize();
     this.mapa.fitBounds(bounds, { padding: 48, maxZoom: 16, duration: 400 });
+  }
+
+  private aplicarSetor(): void {
+    const fonte = this.mapa?.getSource(FONTE_SETOR) as GeoJSONSource | undefined;
+    const geo = this.geometriaSetorAtual();
+    const pontos = geo ? pontosDaGeometria(geo) : [];
+    if (!fonte || !geo || pontos.length === 0) {
+      fonte?.setData(this.colecaoVazia());
+      this.setorDestacado.set(false);
+      return;
+    }
+    fonte.setData({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { papel: 'setor' },
+          geometry: geo,
+        },
+      ],
+    });
+    this.setorDestacado.set(true);
+    this.encaixar(pontos);
+  }
+
+  private geometriaSetorAtual(): GeometriaSetorGeoJson | null {
+    if (typeof this.setorGeom === 'string') {
+      return wktParaGeoJson(this.setorGeom);
+    }
+    return normalizarGeometriaSetor(this.setorGeom);
   }
 
   private renderizar(): void {
