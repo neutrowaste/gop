@@ -46,6 +46,17 @@ export interface MapaAtivo {
   situacaoSinal: SituacaoSinal;
 }
 
+/** Trecho do trajeto real em que o GPS saiu do eixo do plano. */
+export interface MapaDesvio {
+  escalaId: number;
+  equipamentoId: number;
+  equipamentoCodigo: string;
+  colaboradoresNomes: string;
+  setorId: number;
+  setorNome: string;
+  geometry: GeoJsonGeometry;
+}
+
 export interface MapaTrecho {
   trechoExecucaoId: number;
   escalaId: number;
@@ -66,4 +77,5 @@ export interface MapaOperacional {
   geradoEm: string;
   ativos: MapaAtivo[];
   trechos: MapaTrecho[];
+  desvios?: MapaDesvio[];
 }

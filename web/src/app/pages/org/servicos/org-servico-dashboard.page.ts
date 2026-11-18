@@ -190,6 +190,16 @@ export class OrgServicoDashboardPage implements OnInit {
     filtrarRecorte(this.ativosDoModulo(), this.setorFocoId(), this.escalaFocoId()),
   );
 
+  readonly desviosDoModulo = computed(() => {
+    const desvios = this.dados()?.desvios ?? [];
+    const ids = this.setorIds();
+    return ids ? desvios.filter((desvio) => ids.has(desvio.setorId)) : desvios;
+  });
+
+  readonly desviosVisiveis = computed(() =>
+    filtrarRecorte(this.desviosDoModulo(), this.setorFocoId(), this.escalaFocoId()),
+  );
+
   readonly resumo = computed(() => resumirTrechos(this.trechosVisiveis()));
 
   readonly dadosMapa = computed((): MapaOperacional | null => {
@@ -201,6 +211,7 @@ export class OrgServicoDashboardPage implements OnInit {
       ...dados,
       trechos: filtrarTrechos(this.trechosVisiveis(), this.filtroKpi()),
       ativos: this.ativosVisiveis(),
+      desvios: this.desviosVisiveis(),
     };
   });
 

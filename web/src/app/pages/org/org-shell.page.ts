@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { EmpresaModulo } from '../../models/organizacao';
 import { AutenticacaoService } from '../../services/autenticacao.service';
 import { OrganizacaoApiService } from '../../services/organizacao-api.service';
+import { VERSAO_APP } from '../../versao';
 
 const ICONES_SERVICO: Record<string, string> = {
   ESCALA: 'ph-calendar-check',
@@ -25,6 +26,7 @@ export class OrgShellPage implements OnInit, OnDestroy {
   private menuTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly usuario = this.autenticacao.usuario;
+  readonly versaoApp = VERSAO_APP;
   readonly ehAdminEmpresa = this.autenticacao.ehAdminEmpresa;
   readonly servicos = signal<EmpresaModulo[]>([]);
   readonly menuServico = signal<{ codigo: string; top: number; left: number } | null>(null);

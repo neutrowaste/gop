@@ -64,6 +64,16 @@
           <span class="text-slate-600">{{ situacaoLabels.OFFLINE }}</span>
         </li>
       </ul>
+      <p class="mb-2 mt-3 font-semibold uppercase tracking-wide text-slate-500">Trajeto</p>
+      <ul class="space-y-1">
+        <li class="flex items-center gap-2">
+          <span
+            class="h-0.5 w-4 shrink-0 rounded-full"
+            [style.background-color]="statusCores.FORA_DA_ROTA"
+          ></span>
+          <span class="text-slate-600">Fora do trecho</span>
+        </li>
+      </ul>
     </div>
   </div>
 </div>

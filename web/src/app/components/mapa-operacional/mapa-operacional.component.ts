@@ -21,6 +21,7 @@ import maplibregl, {
 
 import {
   MapaAtivo,
+  MapaDesvio,
   MapaOperacional,
   MapaTrecho,
   SITUACAO_SINAL_CORES,
@@ -43,13 +44,17 @@ const CAMADA_SETOR_LINHA = 'gop-setor-operacao-linha';
 const FONTE_TRECHOS = 'gop-trechos';
 const FONTE_PERCURSO = 'gop-trechos-percurso';
 const FONTE_ATIVOS = 'gop-ativos';
+const FONTE_DESVIO = 'gop-desvio';
 const CAMADA_TRECHOS = 'gop-trechos-linha';
 const CAMADA_PERCURSO = 'gop-trechos-percurso';
+const CAMADA_DESVIO_HALO = 'gop-desvio-halo';
+const CAMADA_DESVIO = 'gop-desvio-linha';
 const CAMADA_ATIVOS = 'gop-ativos-ponto';
 
 /**
- * Mapa operacional (RN-001): trechos do plano do dia coloridos por status e
- * posição atual dos ativos GPS. TODO(fase futura): trocar o basemap público
+ * Mapa operacional (RN-001): trechos do plano do dia coloridos por status,
+ * faixa verde do que já foi percorrido no eixo e, em azul, o trajeto real
+ * só quando o GPS sai do trecho. TODO(fase futura): trocar o basemap público
  * por tiles pg_tileserv/Martin quando a infra existir, e migrar a atualização
  * de polling para WebSocket incremental.
  */
@@ -188,6 +193,39 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
         },
       });
 
+      this.mapa!.addSource(FONTE_DESVIO, {
+        type: 'geojson',
+        data: paraFeatureCollectionDesvios([]),
+      });
+      this.mapa!.addLayer({
+        id: CAMADA_DESVIO_HALO,
+        type: 'line',
+        source: FONTE_DESVIO,
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 5,
+          'line-opacity': 0.9,
+        },
+      });
+      this.mapa!.addLayer({
+        id: CAMADA_DESVIO,
+        type: 'line',
+        source: FONTE_DESVIO,
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': this.statusCores.FORA_DA_ROTA,
+          'line-width': 3,
+          'line-opacity': 0.95,
+        },
+      });
+
       this.mapa!.addSource(FONTE_ATIVOS, {
         type: 'geojson',
         data: paraFeatureCollectionAtivos([]),
@@ -240,6 +278,34 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
       this.mapa!.on('mouseleave', CAMADA_ATIVOS, () => {
         this.mapa!.getCanvas().style.cursor = '';
       });
+
+      for (const camada of [CAMADA_DESVIO_HALO, CAMADA_DESVIO]) {
+        this.mapa!.on('click', camada, (evento) => {
+          const feature = evento.features?.[0];
+          if (!feature) {
+            return;
+          }
+          const propriedades = feature.properties as Record<string, string | number>;
+          this.emitirRecorte(propriedades);
+          this.popup?.remove();
+          this.popup = new maplibregl.Popup({ closeButton: true })
+            .setLngLat(evento.lngLat)
+            .setHTML(
+              `<div style="font-size:12px;line-height:1.4">
+              <strong>Fora do trecho</strong><br/>
+              ${propriedades['colaboradoresNomes'] || propriedades['equipamentoCodigo']} · ${propriedades['equipamentoCodigo']}<br/>
+              ${propriedades['setorNome'] ? propriedades['setorNome'] : ''}
+            </div>`,
+            )
+            .addTo(this.mapa!);
+        });
+        this.mapa!.on('mouseenter', camada, () => {
+          this.mapa!.getCanvas().style.cursor = 'pointer';
+        });
+        this.mapa!.on('mouseleave', camada, () => {
+          this.mapa!.getCanvas().style.cursor = '';
+        });
+      }
 
       for (const camada of [CAMADA_TRECHOS, CAMADA_PERCURSO]) {
         this.mapa!.on('click', camada, (evento) => {
@@ -306,12 +372,16 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
     }
     const trechos = this.dados?.trechos ?? [];
     const ativos = this.dados?.ativos ?? [];
+    const desvios = this.dados?.desvios ?? [];
 
     const fonteTrechos = this.mapa.getSource(FONTE_TRECHOS) as GeoJSONSource | undefined;
     fonteTrechos?.setData(paraFeatureCollectionTrechos(trechos));
 
     const fontePercurso = this.mapa.getSource(FONTE_PERCURSO) as GeoJSONSource | undefined;
     fontePercurso?.setData(paraFeatureCollectionPercurso(trechos));
+
+    const fonteDesvio = this.mapa.getSource(FONTE_DESVIO) as GeoJSONSource | undefined;
+    fonteDesvio?.setData(paraFeatureCollectionDesvios(desvios));
 
     const fonteAtivos = this.mapa.getSource(FONTE_ATIVOS) as GeoJSONSource | undefined;
     fonteAtivos?.setData(paraFeatureCollectionAtivos(ativos));
@@ -329,8 +399,8 @@ export class MapaOperacionalComponent implements AfterViewInit, OnChanges, OnDes
       this.mapa.setPaintProperty(CAMADA_ATIVOS, 'circle-radius', this.enquadrarTrechos ? 6 : 8);
     }
 
-    const bounds = calcularLimites(trechos, ativos, pontosArea, this.enquadrarTrechos);
-    const assinatura = `${this.enquadrarTrechos ? 'trechos' : 'tudo'}|${assinaturaEnquadramento(trechos, ativos)}|${assinaturaSetor(area, pontosArea)}`;
+    const bounds = calcularLimites(trechos, ativos, desvios, pontosArea, this.enquadrarTrechos);
+    const assinatura = `${this.enquadrarTrechos ? 'trechos' : 'tudo'}|${assinaturaEnquadramento(trechos, ativos)}|${assinaturaDesvios(desvios)}|${assinaturaSetor(area, pontosArea)}`;
     if (bounds && assinatura !== this.assinaturaEnquadramento) {
       this.assinaturaEnquadramento = assinatura;
       const padding = this.compacto ? { top: 48, right: 188, bottom: 40, left: 40 } : 60;
@@ -387,6 +457,31 @@ function paraFeatureCollectionPercurso(trechos: MapaTrecho[]): FeatureCollection
             setorNome: trecho.setorNome,
             status: trecho.status,
             percentualExecutado: Math.round(trecho.percentualExecutado),
+          },
+        },
+      ];
+    }),
+  };
+}
+
+function paraFeatureCollectionDesvios(desvios: MapaDesvio[]): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: desvios.flatMap((desvio) => {
+      if (desvio.geometry.type !== 'LineString' || desvio.geometry.coordinates.length < 2) {
+        return [];
+      }
+      return [
+        {
+          type: 'Feature' as const,
+          geometry: desvio.geometry,
+          properties: {
+            equipamentoId: desvio.equipamentoId,
+            equipamentoCodigo: desvio.equipamentoCodigo,
+            colaboradoresNomes: desvio.colaboradoresNomes,
+            escalaId: desvio.escalaId,
+            setorId: desvio.setorId,
+            setorNome: desvio.setorNome,
           },
         },
       ];
@@ -451,6 +546,11 @@ function assinaturaSetor(geo: GeometriaSetorGeoJson | null, pontos: [number, num
   return `${geo.type}:${pontos.length}:${primeiro[0]},${primeiro[1]}:${ultimo[0]},${ultimo[1]}`;
 }
 
+function assinaturaDesvios(desvios: MapaDesvio[]): string {
+  const ids = [...new Set(desvios.map((desvio) => desvio.equipamentoId))].sort((a, b) => a - b);
+  return ids.join(',');
+}
+
 function assinaturaEnquadramento(trechos: MapaTrecho[], ativos: MapaAtivo[]): string {
   const trechosIds = trechos.map((trecho) => trecho.trechoExecucaoId).sort((a, b) => a - b);
   const ativosIds = ativos.map((ativo) => ativo.equipamentoId).sort((a, b) => a - b);
@@ -460,6 +560,7 @@ function assinaturaEnquadramento(trechos: MapaTrecho[], ativos: MapaAtivo[]): st
 function calcularLimites(
   trechos: MapaTrecho[],
   ativos: MapaAtivo[],
+  desvios: MapaDesvio[],
   pontosArea: [number, number][] = [],
   priorizarTrechos = false,
 ): LngLatBoundsLike | null {
@@ -475,6 +576,7 @@ function calcularLimites(
       pontos.push([ativo.longitude, ativo.latitude]);
     }
     pontos.push(...pontosTrechos);
+    pontos.push(...pontosDosDesvios(desvios));
   }
   if (pontos.length === 0) {
     return null;
@@ -484,6 +586,16 @@ function calcularLimites(
     bounds.extend(ponto);
   }
   return bounds;
+}
+
+function pontosDosDesvios(desvios: MapaDesvio[]): [number, number][] {
+  const pontos: [number, number][] = [];
+  for (const desvio of desvios) {
+    if (desvio.geometry.type === 'LineString') {
+      pontos.push(...desvio.geometry.coordinates);
+    }
+  }
+  return pontos;
 }
 
 function pontosDosTrechos(trechos: MapaTrecho[]): [number, number][] {

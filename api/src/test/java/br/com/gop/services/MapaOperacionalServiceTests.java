@@ -17,6 +17,7 @@ import br.com.gop.models.Turno;
 import br.com.gop.models.Usuario;
 import br.com.gop.repositories.EscalaRepository;
 import br.com.gop.repositories.PosicaoGpsRepository;
+import br.com.gop.repositories.PosicaoTrajetoConsulta;
 import br.com.gop.repositories.TrechoExecucaoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,11 +27,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -69,6 +72,7 @@ class MapaOperacionalServiceTests {
 		);
 		lenient().when(parametroEmpresaService.toleranciaSinalMinutos(EMPRESA_ID)).thenReturn(30L);
 		lenient().when(parametroEmpresaService.silencioGpsMinutos(EMPRESA_ID)).thenReturn(60L);
+		lenient().when(posicaoGpsRepository.listarTrajeto(any(), any(), any(), any())).thenReturn(List.of());
 	}
 
 	@Test
@@ -80,6 +84,7 @@ class MapaOperacionalServiceTests {
 
 		assertThat(resposta.ativos()).isEmpty();
 		assertThat(resposta.trechos()).isEmpty();
+		assertThat(resposta.desvios()).isEmpty();
 		assertThat(resposta.data()).isEqualTo(HOJE);
 	}
 
@@ -124,6 +129,36 @@ class MapaOperacionalServiceTests {
 		double[][] coordenadas = (double[][]) geometria.coordinates();
 		assertThat(coordenadas.length).isEqualTo(2);
 		assertThat(coordenadas[0]).containsExactly(-46.63, -23.55);
+	}
+
+	@Test
+	void desenhaDesvioSomenteQuandoOGpsSaiDoTrecho() {
+		Escala escala = escala(10L);
+		when(escalaRepository.findByEmpresaIdAndDataAndStatusAndAtivoTrue(EMPRESA_ID, HOJE, StatusEscala.PUBLICADA))
+			.thenReturn(List.of(escala));
+		when(trechoExecucaoRepository.findByEscalaIdAndAtivoTrueOrderByOrdemAsc(escala.getId()))
+			.thenReturn(List.of());
+		when(posicaoGpsRepository.findTopByEmpresaIdAndEquipamentoIdOrderByRecebidoEmDesc(
+			EMPRESA_ID, equipamentoDa(escala).getId()
+		)).thenReturn(Optional.empty());
+		Instant base = HOJE.atTime(9, 0).toInstant(ZoneOffset.UTC);
+		when(posicaoGpsRepository.listarTrajeto(eq(EMPRESA_ID), any(), any(), any())).thenReturn(List.of(
+			consulta(base, -23.550, -46.630, true),
+			consulta(base.plus(1, ChronoUnit.MINUTES), -23.551, -46.631, false),
+			consulta(base.plus(2, ChronoUnit.MINUTES), -23.552, -46.632, false),
+			consulta(base.plus(3, ChronoUnit.MINUTES), -23.553, -46.630, true)
+		));
+
+		MapaOperacionalResponse resposta = service.obter(EMPRESA_ID, HOJE);
+
+		assertThat(resposta.desvios()).hasSize(1);
+		assertThat(resposta.desvios().get(0).equipamentoCodigo()).isEqualTo("LUT-0001");
+		assertThat(resposta.desvios().get(0).escalaId()).isEqualTo(10L);
+		assertThat(resposta.desvios().get(0).geometry().type()).isEqualTo("LineString");
+		double[][] coordenadas = (double[][]) resposta.desvios().get(0).geometry().coordinates();
+		assertThat(coordenadas).hasDimensions(4, 2);
+		assertThat(coordenadas[0]).containsExactly(-46.630, -23.550);
+		assertThat(coordenadas[3]).containsExactly(-46.630, -23.553);
 	}
 
 	@Test
@@ -225,6 +260,10 @@ class MapaOperacionalServiceTests {
 		execucao.setPercentualExecutado(percentual);
 		execucao.setAtivo(true);
 		return execucao;
+	}
+
+	private PosicaoTrajetoConsulta consulta(Instant capturadoEm, double latitude, double longitude, boolean valido) {
+		return new PosicaoTrajetoConsulta(1L, GeometriaWkt.pontoDe(latitude, longitude), capturadoEm, valido);
 	}
 
 	private PosicaoGps posicao(Instant recebidoEm) {
